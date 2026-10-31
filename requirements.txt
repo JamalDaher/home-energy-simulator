@@ -1,0 +1,2 @@
+# Install the package itself and its Streamlit dashboard dependencies.
+-e .[web]
