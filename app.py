@@ -160,3 +160,39 @@ st.line_chart(outage_df[["demand_kwh", "solar_kwh", "battery_delivered_kwh", "ge
 st.download_button("Download outage CSV", outage_df.to_csv().encode("utf-8"),
                    "outage_simulation.csv", "text/csv")
 st.info("Illustrative hourly averages only. Fuel burn is fixed per running hour; no starting surges, generator minimum loading, battery BMS, temperature, shading, weather forecasts, or equipment interconnection constraints are modeled.")
+
+
+st.divider()
+st.header("HVAC & Generator Sizing (v0.6)")
+st.caption("Nominal running and startup capacity screening. Enter equipment-specific ratings before drawing conclusions.")
+from home_energy_simulator.hvac import HVACLoad, SourceRating, evaluate_hvac
+hc1, hc2, hc3 = st.columns(3)
+with hc1:
+    hvac_running = st.number_input("HVAC running power (kW)", min_value=0.0, value=3.5, step=0.1)
+    hvac_multiplier = st.number_input("Starting-to-running multiplier", min_value=1.0, value=3.0, step=0.25)
+with hc2:
+    other_running = st.number_input("Other simultaneous running load (kW)", min_value=0.0, value=2.0, step=0.1)
+    soft_reduction = st.slider("Estimated soft-start surge reduction (%)", 0, 100, 60, 5)
+with hc3:
+    gen_surge = st.number_input("Generator surge rating (kW)", min_value=float(gen_kw), value=max(float(gen_kw), float(gen_kw) * 1.2), step=0.5)
+    inv_surge = st.number_input("Inverter surge rating (kW)", min_value=float(inverter), value=max(float(inverter), float(inverter) * 1.5), step=0.5)
+hvac_spec = HVACLoad(hvac_running, hvac_multiplier, soft_reduction / 100)
+generator_rating = SourceRating(gen_kw if gen_enabled else 0.0, gen_surge if gen_enabled else 0.0)
+inverter_rating = SourceRating(inverter, inv_surge)
+st.metric("Estimated HVAC startup demand", f"{hvac_spec.starting_kw:.1f} kW")
+st.metric("With estimated soft-start", f"{hvac_spec.soft_start_kw:.1f} kW")
+sizing_rows = []
+for source_name, source_rating in [("Generator", generator_rating), ("Battery inverter", inverter_rating)]:
+    for use_soft in (False, True):
+        result = evaluate_hvac(hvac_spec, source_rating, other_running, use_soft_start=use_soft)
+        sizing_rows.append({
+            "Source": source_name,
+            "Soft-start": "Yes" if use_soft else "No",
+            "Running demand (kW)": round(result.required_running_kw, 2),
+            "Starting demand (kW)": round(result.required_start_kw, 2),
+            "Running margin (kW)": round(result.running_margin_kw, 2),
+            "Starting margin (kW)": round(result.starting_margin_kw, 2),
+            "Nominal capacity check": "Within ratings" if result.nominally_fits else "Exceeds rating",
+        })
+st.dataframe(pd.DataFrame(sizing_rows), hide_index=True, use_container_width=True)
+st.warning("Within ratings does NOT guarantee a compressor will start. Motor starting current, surge duration, voltage dip, generator transient response, power factor and transfer equipment are not modeled. Never backfeed a home; consult a qualified electrician.")
