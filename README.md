@@ -1,5 +1,7 @@
 # Home Energy Simulator
 
+[**Launch Live Demo**](https://home-energy-simulator.streamlit.app) · [**GitHub Release v1.0.0**](https://github.com/JamalDaher/home-energy-simulator/releases/tag/v1.0.0)
+
 **Version 1.0** — Python engineering portfolio application for exploring residential solar, LiFePO4 battery storage, generators and power-outage resilience.
 
 ## Features
