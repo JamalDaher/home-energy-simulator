@@ -7,8 +7,8 @@ from datetime import date
 from home_energy_simulator.loads import Appliance, default_appliances, hourly_load_kw, daily_energy_kwh
 
 st.set_page_config(page_title="Home Energy Simulator", layout="wide")
-st.title("Home Energy Simulator")
-st.caption("Illustrative hourly solar, battery and backup-power model — not an electrical design tool.")
+st.title("Home Energy Simulator · v1.0")
+st.caption("Solar · Battery · Generator · Outage resilience · Cost comparison | Educational engineering model")
 
 with st.sidebar:
     st.header("System configuration")
@@ -323,3 +323,55 @@ if "opt_results" in st.session_state:
     st.download_button("Download optimization CSV", opt_table.to_csv(index=False).encode("utf-8"),
                        "system_optimization.csv", "text/csv")
 st.info("This is a discrete comparison for a single illustrative outage, not lifetime cost optimization or a statistical reliability estimate. Fuel rates, installation costs and weather are assumptions; electrical feasibility is not checked.")
+
+
+st.divider()
+st.header("Scenario Workspace & PDF Reports (v1.0)")
+st.caption("Save a snapshot as JSON, reload it for independent analysis, and export a PDF report. Files remain on your device; nothing is saved to a server.")
+from home_energy_simulator.scenarios import Scenario, scenario_to_json, scenario_from_json
+from home_energy_simulator.reports import outage_pdf
+
+scenario_name = st.text_input("Scenario name", value="Residential backup study")
+try:
+    current_scenario = Scenario(
+        name=scenario_name,
+        config=SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
+                            initial_soc=initial / 100, generator_enabled=gen_enabled,
+                            generator_kw=gen_kw, grid_available=False),
+        loads_kw=list(loads), sun_factors=list(sun), days=outage_days,
+    )
+    st.download_button("Save current scenario (.json)",
+                       scenario_to_json(current_scenario).encode("utf-8"),
+                       file_name="home_energy_scenario.json", mime="application/json")
+except ValueError as exc:
+    st.error(f"Cannot save current scenario: {exc}")
+    current_scenario = None
+
+uploaded_scenario = st.file_uploader("Load a saved scenario (.json)", type=["json"])
+selected_scenario = current_scenario
+if uploaded_scenario is not None:
+    try:
+        selected_scenario = scenario_from_json(uploaded_scenario.getvalue())
+        st.success(f"Loaded scenario: {selected_scenario.name} (runs independently of current sidebar inputs)")
+    except ValueError as exc:
+        selected_scenario = None
+        st.error(f"Cannot load scenario: {exc}")
+
+if selected_scenario is not None:
+    try:
+        report_outage = simulate_outage(
+            selected_scenario.config, selected_scenario.loads_kw,
+            selected_scenario.sun_factors, days=selected_scenario.days,
+        )
+        rp1, rp2, rp3 = st.columns(3)
+        rp1.metric("Scenario demand served", f"{report_outage.fraction_demand_served:.1%}")
+        rp2.metric("Unserved energy", f"{report_outage.total_unserved_kwh:.1f} kWh")
+        rp3.metric("Generator operating hours", report_outage.generator_hours)
+        report_df = pd.DataFrame(report_outage.rows).set_index("hour")
+        st.line_chart(report_df[["demand_kwh", "solar_kwh", "generator_kwh", "unmet_kwh"]])
+        st.download_button("Download outage analysis PDF",
+                           outage_pdf(selected_scenario, report_outage),
+                           file_name="home_energy_outage_report.pdf", mime="application/pdf")
+    except ValueError as exc:
+        st.error(f"Unable to simulate scenario: {exc}")
+st.info("Scenario JSON stores system settings and hourly load/solar profiles, not fuel-model settings. PDF reports therefore use the legacy unlimited-fuel dispatch model; use the Integrated Fuel-Aware Outage panel for fuel-limited analysis.")
