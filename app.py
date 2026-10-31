@@ -4,6 +4,7 @@ import streamlit as st
 from home_energy_simulator import SystemConfig, demo_profiles, simulate, totals
 from home_energy_simulator.solar import SolarConfig, solar_factors
 from datetime import date
+from home_energy_simulator.loads import Appliance, default_appliances, hourly_load_kw, daily_energy_kwh
 
 st.set_page_config(page_title="Home Energy Simulator", layout="wide")
 st.title("Home Energy Simulator")
@@ -30,7 +31,52 @@ with st.sidebar:
 config = SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
                       initial_soc=initial/100, generator_enabled=gen_enabled,
                       generator_kw=gen_kw, grid_available=grid)
-loads, demo_sun = demo_profiles()
+st.header("Household Load Designer")
+st.caption("Edit appliance running watts, schedules and duty cycles to model hourly average demand.")
+if "appliances" not in st.session_state:
+    st.session_state.appliances = [
+        dict(name=a.name, running_watts=float(a.running_watts), quantity=a.quantity,
+             start_hour=a.start_hour, end_hour=a.end_hour, duty_cycle=float(a.duty_cycle))
+        for a in default_appliances()
+    ]
+edited = st.data_editor(
+    pd.DataFrame(st.session_state.appliances),
+    num_rows="dynamic",
+    hide_index=True,
+    use_container_width=True,
+    column_config={
+        "name": st.column_config.TextColumn("Appliance", required=True),
+        "running_watts": st.column_config.NumberColumn("Running watts", min_value=0.0, step=50.0, required=True),
+        "quantity": st.column_config.NumberColumn("Quantity", min_value=1, max_value=100, step=1, required=True),
+        "start_hour": st.column_config.NumberColumn("Start hour (0–23)", min_value=0, max_value=23, step=1, required=True),
+        "end_hour": st.column_config.NumberColumn("End hour (1–24)", min_value=1, max_value=24, step=1, required=True),
+        "duty_cycle": st.column_config.NumberColumn("Duty cycle (0–1)", min_value=0.0, max_value=1.0, step=0.05, required=True),
+    },
+    key="appliance_editor",
+)
+appliances = []
+errors = []
+for i, record in enumerate(edited.to_dict("records"), start=1):
+    try:
+        if any(pd.isna(value) for value in record.values()):
+            raise ValueError("All fields are required")
+        appliances.append(Appliance(
+            name=str(record["name"]),
+            running_watts=float(record["running_watts"]),
+            quantity=int(record["quantity"]),
+            start_hour=int(record["start_hour"]),
+            end_hour=int(record["end_hour"]),
+            duty_cycle=float(record["duty_cycle"]),
+        ))
+    except (ValueError, TypeError) as exc:
+        errors.append(f"Row {i}: {exc}")
+if errors:
+    st.error("Invalid appliance entries: " + "; ".join(errors))
+    st.stop()
+loads = hourly_load_kw(appliances)
+st.metric("Estimated daily consumption", f"{daily_energy_kwh(appliances):.1f} kWh")
+st.line_chart(pd.DataFrame({"Household load (kW)": loads}))
+_, demo_sun = demo_profiles()
 sun = solar_factors(SolarConfig(latitude_deg=latitude, longitude_deg=longitude,
                                array_kw=solar, tilt_deg=tilt, azimuth_deg=azimuth,
                                cloud_factor=clouds), day) if use_solar else demo_sun
