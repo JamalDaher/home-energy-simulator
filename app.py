@@ -50,3 +50,32 @@ st.line_chart(df[["soc"]])
 st.download_button("Download simulation CSV", df.to_csv().encode("utf-8"),
                    "energy_simulation.csv", "text/csv")
 st.info("Load is synthetic. Solar model is approximate clear-sky geometry, not measured weather. Longitude is recorded but hours use local solar time; no time-zone or equation-of-time correction. No surge loads, temperature, fuel or shading modeled.")
+
+
+st.divider()
+st.header('LiFePO4 Battery Bank Designer')
+st.caption('Nominal educational estimates only; verify manufacturer series/parallel approval and electrical protections.')
+from home_energy_simulator.battery import BatteryBank
+bc1,bc2,bc3 = st.columns(3)
+with bc1:
+    module_v = st.number_input('Module nominal voltage (V)', min_value=1.0, value=12.8, step=0.1)
+    module_ah = st.number_input('Module capacity (Ah)', min_value=1.0, value=280.0, step=10.0)
+with bc2:
+    series = st.number_input('Modules in series', min_value=1, max_value=16, value=4)
+    parallel = st.number_input('Parallel strings', min_value=1, max_value=16, value=1)
+with bc3:
+    dod = st.slider('Usable depth of discharge (%)', 10, 100, 80)
+    eff = st.slider('Inverter efficiency (%)', 50, 100, 92)
+bank = BatteryBank(module_voltage=module_v, module_ah=module_ah, series=series,
+                   parallel=parallel, usable_depth_of_discharge=dod/100,
+                   inverter_efficiency=eff/100)
+summary_bank = bank.summary()
+x,y,z = st.columns(3)
+x.metric('Nominal voltage', f"{summary_bank['nominal_voltage_v']:.1f} V")
+y.metric('Stored energy', f"{summary_bank['nominal_energy_kwh']:.2f} kWh")
+z.metric('Usable AC energy', f"{summary_bank['usable_ac_energy_kwh']:.2f} kWh")
+load_for_runtime = st.number_input('Constant AC load for runtime estimate (kW)', min_value=0.1, value=1.0, step=0.1)
+try:
+    st.metric('Estimated runtime', f'{bank.runtime_hours(load_for_runtime):.1f} hours')
+except ValueError as exc:
+    st.warning(str(exc))
