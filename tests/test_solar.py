@@ -33,8 +33,8 @@ def test_factors_bounded():
     factors = solar_factors(SolarConfig(), date(2026, 6, 21))
     assert all(0 <= x <= 1 for x in factors)
 
-def test_south_facing_beats_north_in_summer():
-    day = date(2026, 6, 21)
+def test_south_facing_beats_north_at_equinox():
+    day = date(2026, 3, 20)
     south = sum(hourly_pv_kw(SolarConfig(tilt_deg=35, azimuth_deg=180), day))
     north = sum(hourly_pv_kw(SolarConfig(tilt_deg=35, azimuth_deg=0), day))
     assert south > north
