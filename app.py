@@ -261,3 +261,65 @@ else:
     st.download_button("Download integrated outage CSV", integrated_df.to_csv().encode("utf-8"),
                        "integrated_outage.csv", "text/csv")
     st.info("Fuel is burned only during modeled generator output. An hour is skipped if insufficient fuel remains for the entire hour; partial-hour generation, starting surges and actual fuel curves are not modeled.")
+
+
+st.divider()
+st.header("System Optimization (v0.9)")
+st.caption("Compare discrete solar, battery and generator sizes for one repeated-day outage scenario.")
+from home_energy_simulator.optimization import UnitCosts, optimize_system
+opt1, opt2, opt3 = st.columns(3)
+with opt1:
+    solar_choices = st.multiselect("Solar capacities (kW)", [0.0, 2.4, 4.8, 7.2, 9.6], default=[0.0, 4.8, 9.6])
+    battery_choices = st.multiselect("Battery capacities (kWh)", [0.0, 7.0, 14.0, 28.0, 42.0], default=[0.0, 14.0, 28.0])
+with opt2:
+    generator_choices = st.multiselect("Generator capacities (kW)", [0.0, 3.0, 5.0, 8.0, 10.0], default=[0.0, 5.0, 10.0])
+    target_served = st.slider("Minimum energy demand served (%)", 0, 100, 99)
+with opt3:
+    solar_unit_cost = st.number_input("Solar installed cost ($/kW)", min_value=0.0, value=1500.0, step=100.0)
+    battery_unit_cost = st.number_input("Battery installed cost ($/kWh)", min_value=0.0, value=500.0, step=50.0)
+    generator_unit_cost = st.number_input("Generator installed cost ($/kW)", min_value=0.0, value=300.0, step=50.0)
+use_opt_fuel = st.checkbox("Include load-dependent generator fuel cost and inventory",
+                           value=True, key="opt_fuel")
+if st.button("Compare system configurations", type="primary"):
+    try:
+        opt_fuel_model = None
+        if use_opt_fuel:
+            opt_fuel_model = FuelModel(fuel_kind, max(max(generator_choices), 0.1),
+                                       idle_rate, full_rate, fuel_price) if generator_choices else None
+        opt_results = optimize_system(
+            SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
+                         initial_soc=initial / 100, grid_available=False),
+            loads, sun, solar_choices, battery_choices, generator_choices,
+            UnitCosts(solar_unit_cost, battery_unit_cost, generator_unit_cost),
+            days=outage_days, min_demand_served=target_served / 100,
+            fuel_model=opt_fuel_model,
+            fuel_available=inventory if use_opt_fuel and use_finite_fuel else None,
+        )
+        st.session_state["opt_results"] = opt_results
+        st.session_state["opt_target"] = target_served / 100
+        st.session_state["opt_unit"] = opt_fuel_model.unit if opt_fuel_model else "not modeled"
+    except ValueError as exc:
+        st.error(str(exc))
+if "opt_results" in st.session_state:
+    results_opt = st.session_state["opt_results"]
+    target_opt = st.session_state["opt_target"]
+    feasible = [c for c in results_opt if c.demand_served >= target_opt]
+    st.metric("Configurations evaluated", len(results_opt))
+    if feasible:
+        best = feasible[0]
+        st.success(f"Lowest modeled cost meeting target: {best.solar_kw:g} kW solar, "
+                   f"{best.battery_kwh:g} kWh battery, {best.generator_kw:g} kW generator "
+                   f"— ${best.total_cost:,.0f} total modeled cost, {best.demand_served:.1%} demand served.")
+    else:
+        st.warning("No candidate meets the requested energy-served target; showing highest-serving options first.")
+    opt_table = pd.DataFrame([{
+        "Solar (kW)": c.solar_kw, "Battery (kWh)": c.battery_kwh,
+        "Generator (kW)": c.generator_kw, "Demand served (%)": round(c.demand_served * 100, 2),
+        "Unmet (kWh)": c.unmet_kwh, "Capital cost ($)": c.capital_cost,
+        "Outage fuel cost ($)": c.fuel_cost, "Total modeled cost ($)": c.total_cost,
+        "Fuel used": c.fuel_used,
+    } for c in results_opt])
+    st.dataframe(opt_table, hide_index=True, use_container_width=True)
+    st.download_button("Download optimization CSV", opt_table.to_csv(index=False).encode("utf-8"),
+                       "system_optimization.csv", "text/csv")
+st.info("This is a discrete comparison for a single illustrative outage, not lifetime cost optimization or a statistical reliability estimate. Fuel rates, installation costs and weather are assumptions; electrical feasibility is not checked.")
