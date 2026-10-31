@@ -196,3 +196,38 @@ for source_name, source_rating in [("Generator", generator_rating), ("Battery in
         })
 st.dataframe(pd.DataFrame(sizing_rows), hide_index=True, use_container_width=True)
 st.warning("Within ratings does NOT guarantee a compressor will start. Motor starting current, surge duration, voltage dip, generator transient response, power factor and transfer equipment are not modeled. Never backfeed a home; consult a qualified electrician.")
+
+
+st.divider()
+st.header("Generator Fuel & Runtime Calculator (v0.7)")
+st.caption("Independent steady-load planning estimate; not yet connected to outage dispatch.")
+from home_energy_simulator.fuel import FuelModel
+fc1, fc2, fc3 = st.columns(3)
+with fc1:
+    fuel_kind = st.selectbox("Generator fuel type", ["gasoline", "propane", "natural_gas"],
+                             format_func=lambda x: {"gasoline": "Gasoline", "propane": "Propane", "natural_gas": "Natural gas"}[x])
+    fuel_unit = "cubic feet" if fuel_kind == "natural_gas" else "gallons"
+    rated_fuel_kw = st.number_input("Generator continuous rating (kW)", min_value=0.1, value=10.0, step=0.5)
+    load_fuel_kw = st.number_input("Steady electrical output (kW)", min_value=0.0,
+                                  max_value=float(rated_fuel_kw), value=min(5.0, float(rated_fuel_kw)), step=0.5)
+with fc2:
+    idle_rate = st.number_input(f"Idle fuel rate ({fuel_unit}/hour)", min_value=0.0, value=0.5 if fuel_kind != "natural_gas" else 30.0, step=0.1)
+    full_rate = st.number_input(f"Full-load fuel rate ({fuel_unit}/hour)", min_value=float(idle_rate),
+                                value=max(float(idle_rate), 2.0 if fuel_kind != "natural_gas" else 130.0), step=0.1)
+    fuel_price = st.number_input(f"Fuel price ($/{fuel_unit})", min_value=0.0, value=3.0 if fuel_kind != "natural_gas" else 0.02, step=0.01)
+with fc3:
+    operation_hours = st.number_input("Planned operating hours", min_value=0.0, value=72.0, step=1.0)
+    use_finite_fuel = st.checkbox("Limit by available fuel inventory", value=fuel_kind != "natural_gas")
+    inventory = st.number_input(f"Available fuel ({fuel_unit})", min_value=0.0, value=20.0, step=1.0,
+                                disabled=not use_finite_fuel)
+fuel_model = FuelModel(fuel_kind, rated_fuel_kw, idle_rate, full_rate, fuel_price)
+fuel_result = fuel_model.estimate(load_fuel_kw, operation_hours, inventory if use_finite_fuel else None)
+fm1, fm2, fm3, fm4 = st.columns(4)
+fm1.metric("Estimated fuel rate", f"{fuel_result['fuel_rate_per_hour']:.2f} {fuel_unit}/h")
+fm2.metric("Fuel needed", f"{fuel_result['fuel_needed']:.1f} {fuel_unit}")
+fm3.metric("Fuel cost (full duration)", f"${fuel_result['fuel_cost']:,.2f}")
+fm4.metric("Estimated runtime with inventory",
+           "Not limited" if fuel_result["available_runtime_hours"] is None else f"{fuel_result['available_runtime_hours']:.1f} hours")
+if use_finite_fuel and fuel_result["supplied_hours"] < operation_hours:
+    st.warning(f"Inventory covers approximately {fuel_result['supplied_hours']:.1f} of {operation_hours:.1f} planned hours.")
+st.info("Linear idle-to-full-load consumption is an illustrative assumption. Use manufacturer-measured fuel rates where possible. The separate outage simulator still uses a fixed liters/hour model.")
