@@ -231,3 +231,33 @@ fm4.metric("Estimated runtime with inventory",
 if use_finite_fuel and fuel_result["supplied_hours"] < operation_hours:
     st.warning(f"Inventory covers approximately {fuel_result['supplied_hours']:.1f} of {operation_hours:.1f} planned hours.")
 st.info("Linear idle-to-full-load consumption is an illustrative assumption. Use manufacturer-measured fuel rates where possible. The separate outage simulator still uses a fixed liters/hour model.")
+
+
+st.divider()
+st.header("Integrated Fuel-Aware Outage (v0.8)")
+st.caption("Uses the household load, solar, battery and generator settings above, with load-dependent fuel consumption from the v0.7 fuel model.")
+integrated = simulate_outage(
+    SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
+                 initial_soc=initial / 100, generator_enabled=gen_enabled,
+                 generator_kw=gen_kw, grid_available=False),
+    loads, sun, days=outage_days, fuel_model=fuel_model,
+    fuel_available=inventory if use_finite_fuel else None,
+) if not gen_enabled or gen_kw <= rated_fuel_kw else None
+if integrated is None:
+    st.error("Set the fuel model's continuous generator rating at least as high as the generator power in the sidebar.")
+else:
+    im1, im2, im3, im4 = st.columns(4)
+    im1.metric("Demand served", f"{integrated.fraction_demand_served:.1%}")
+    im2.metric("Fuel consumed", f"{integrated.generator_fuel_used:.2f} {integrated.generator_fuel_unit}")
+    im3.metric("Fuel remaining", "Unlimited" if integrated.generator_fuel_remaining is None else
+               f"{integrated.generator_fuel_remaining:.2f} {integrated.generator_fuel_unit}")
+    im4.metric("Generator fuel cost", f"${integrated.generator_fuel_cost:,.2f}")
+    if integrated.first_unserved_hour is not None:
+        st.warning(f"First unmet demand in hour {integrated.first_unserved_hour + 1}.")
+    else:
+        st.success("All modeled demand served throughout the outage.")
+    integrated_df = pd.DataFrame(integrated.rows).set_index("hour")
+    st.line_chart(integrated_df[["generator_kwh", "generator_fuel_used", "unmet_kwh"]])
+    st.download_button("Download integrated outage CSV", integrated_df.to_csv().encode("utf-8"),
+                       "integrated_outage.csv", "text/csv")
+    st.info("Fuel is burned only during modeled generator output. An hour is skipped if insufficient fuel remains for the entire hour; partial-hour generation, starting surges and actual fuel curves are not modeled.")
