@@ -13,11 +13,11 @@ def test_no_sources_has_unserved_load():
     assert r.hours_simulated == 48
 
 def test_grid_forcibly_disabled():
-    r = simulate_outage(SystemConfig(solar_kw=0, battery_kwh=0, grid_available=True), ONE_KW, NIGHT)
+    r = simulate_outage(SystemConfig(solar_kw=0, battery_kwh=0, grid_available=True), ONE_KW, NIGHT, days=1)
     assert r.total_unserved_kwh == pytest.approx(24)
 
 def test_generator_serves_load():
-    r = simulate_outage(SystemConfig(solar_kw=0, battery_kwh=0, generator_enabled=True, generator_kw=2), ONE_KW, NIGHT)
+    r = simulate_outage(SystemConfig(solar_kw=0, battery_kwh=0, generator_enabled=True, generator_kw=2), ONE_KW, NIGHT, days=1)
     assert r.total_unserved_kwh == pytest.approx(0)
     assert r.generator_hours == 24
 
