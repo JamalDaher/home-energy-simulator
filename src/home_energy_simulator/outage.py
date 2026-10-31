@@ -119,7 +119,7 @@ def simulate_outage(
         total_unserved_kwh=summary["unmet_kwh"],
         fraction_demand_served=max(0.0, min(1.0, 1 - summary["unmet_kwh"] / demand)) if demand else 1.0,
         generator_hours=gen_hours,
-        generator_fuel_liters=round(gen_hours * generator_fuel_liters_per_hour, 3),
+        generator_fuel_liters=round(gen_hours * generator_fuel_liters_per_hour, 3) if fuel_model is None else 0.0,
         final_soc=stored_soc,
         rows=rows,
         generator_fuel_used=round(total_fuel_used, 3),
