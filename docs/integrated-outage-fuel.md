@@ -1,0 +1,7 @@
+# Integrated fuel-aware outage simulation (v0.8)
+
+The existing hourly outage engine now optionally accepts a v0.7 `FuelModel` and fuel inventory in the model's native units (gallons for gasoline/propane, cubic feet for natural gas). For each hour it simulates solar, battery and generator dispatch, computes the generator's **actual dispatched kWh** and interpolates the hourly fuel rate using the configured idle/full-load rates. If inventory cannot cover that whole hour, the engine reruns the hour with the generator disabled. Battery state of charge continues across hours. Output rows include fuel used and fuel remaining; the summary includes total fuel and fuel cost.
+
+The original fixed-liters/hour outage mode remains supported for backward compatibility. The Streamlit interface adds a separate integrated outage section using the same load and solar profile, outage duration and generator settings.
+
+Limitations: Hourly average power is treated as constant within each hour. The generator is assumed off if it delivers no energy; no idle-only hours, startup fuel, minimum runtime, part-hour fuel exhaustion, generator charging batteries, transient/surge limits, fuel conversions, pressure/flow constraints, or manufacturer efficiency curves are modeled. Rates and costs are illustrative user inputs. Generator and inverter should not be interconnected without appropriate code-compliant transfer equipment and professional design.
