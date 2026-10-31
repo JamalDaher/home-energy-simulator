@@ -1,33 +1,29 @@
 # Home Energy Simulator
 
-An open-source Python portfolio project for modeling hourly residential solar generation, battery storage, generator backup, and grid electricity.
+**Version 1.0** — Python engineering portfolio application for exploring residential solar, LiFePO4 battery storage, generators and power-outage resilience.
 
 ## Features
 
-- Deterministic hourly energy dispatch: solar → battery → generator → grid
-- Battery capacity, minimum state-of-charge, inverter limit, and round-trip losses
-- Streamlit dashboard with charts and downloadable CSV
-- Command-line interface with JSON summary
-- Automated unit tests and GitHub Actions CI
+- Hourly solar/battery/generator dispatch with state-of-charge tracking
+- Seasonal solar geometry and editable household appliance schedules
+- Battery bank design, HVAC starting-load screening, generator fuel/runtime estimates
+- Multi-day outage modeling and load-dependent generator fuel consumption
+- Discrete solar/battery/generator capacity comparison by modeled cost and energy served
+- Interactive Streamlit charts, CSV exports, portable JSON scenarios and PDF outage reports
+- Python CLI, automated pytest suite and GitHub Actions CI
 
 ## Quick start
 
-Requires Python 3.10+.
+Python 3.10+ required.
 
 ```bash
 python -m venv .venv
-# Windows: .venv\Scripts\python -m pip install -e ".[web,dev]"
-# macOS/Linux:
-.venv/bin/python -m pip install -e ".[web,dev]"
-```
-
-Run the dashboard:
-
-```bash
+# Activate your virtual environment, then:
+python -m pip install -e ".[web,dev]"
 python -m streamlit run app.py
 ```
 
-Run a CLI simulation:
+CLI example:
 
 ```bash
 home-energy --solar-kw 4.8 --battery-kwh 14 --generator --generator-kw 5
@@ -39,28 +35,23 @@ Run tests:
 python -m pytest -q
 ```
 
+## Example study
+
+Model a 4.8 kW solar array, 14 kWh battery and 5 kW generator across a three-day outage. Edit appliance schedules and sunlight assumptions, compare generator fuel budgets, then use **System Optimization** to rank candidate system sizes. Save a scenario JSON snapshot and download a PDF summary from **Scenario Workspace & PDF Reports**.
+
+The scenario workspace's PDF currently uses the unlimited-fuel legacy outage simulation; the separate fuel-aware outage panel provides finite-inventory analysis. See [v1 release guide](docs/v1-release.md) and [optimization assumptions](docs/system-optimization.md).
+
 ## Repository layout
 
-```text
-app.py                           Streamlit UI
-src/home_energy_simulator/       Simulation engine and CLI
-tests/                           Unit tests
-.github/workflows/ci.yml         GitHub Actions test workflow
-pyproject.toml                   Python package configuration
-```
+- `app.py` — Streamlit dashboard
+- `src/home_energy_simulator/` — tested simulation and reporting modules
+- `tests/` — unit and regression tests
+- `docs/` — modeling notes and release guide
+- `.github/workflows/ci.yml` — automated test workflow
 
-## Modeling assumptions
+## Limitations
 
-Each step represents one hour. All power ratings are in kW and energy flows are in kWh. Solar availability and load profiles are synthetic illustrative inputs, not actual weather or household measurements. The generator is dispatched only after available solar and battery energy. The grid, if enabled, supplies any remaining demand. Battery charge/discharge efficiency is applied separately. This is not an electrical engineering installation design.
-
-## Roadmap
-
-- Weather-derived solar generation and seasonal scenarios
-- Real CSV load profile uploads
-- Generator fuel consumption and operating costs
-- 48 V LiFePO4 battery configuration
-- Outage resilience and Monte Carlo scenarios
-- More rigorous validation and energy-balance testing
+This is a **scenario-analysis and educational tool**, not a validated electrical design, equipment-sizing certification, weather forecast, financial investment model, or installation guide. Hourly averaged loads cannot represent motor-start surges, generator transients, BMS restrictions or wiring/transfer safety. Costs and fuel rates are user assumptions. The percentage of energy served in one simulated outage is **not** a probability of reliability.
 
 ## License
 
