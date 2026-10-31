@@ -79,3 +79,38 @@ try:
     st.metric('Estimated runtime', f'{bank.runtime_hours(load_for_runtime):.1f} hours')
 except ValueError as exc:
     st.warning(str(exc))
+
+
+st.divider()
+st.header("Whole-Home Outage Simulator")
+st.caption("Repeat a synthetic 24-hour household load and the selected solar profile over multiple outage days. The grid is always off.")
+from home_energy_simulator.outage import simulate_outage
+oc1, oc2, oc3 = st.columns(3)
+with oc1:
+    outage_days = st.slider("Outage duration (days)", 1, 14, 3)
+with oc2:
+    hourly_fuel = st.number_input("Generator fuel use (liters/hour running)", min_value=0.1, value=2.0, step=0.1)
+with oc3:
+    fuel_available = st.number_input("Generator fuel available (liters)", min_value=0.0, value=40.0, step=5.0)
+outage = simulate_outage(
+    SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
+                 initial_soc=initial / 100, generator_enabled=gen_enabled,
+                 generator_kw=gen_kw, grid_available=False),
+    loads, sun, days=outage_days,
+    generator_fuel_liters_per_hour=hourly_fuel,
+    generator_fuel_available_liters=fuel_available,
+)
+o1, o2, o3, o4 = st.columns(4)
+o1.metric("Hours fully supplied", f"{outage.hours_fully_served}/{outage.hours_simulated}")
+o2.metric("Demand served", f"{outage.fraction_demand_served:.1%}")
+o3.metric("Generator operating hours", f"{outage.generator_hours}")
+o4.metric("Fuel consumed", f"{outage.generator_fuel_liters:.1f} L")
+if outage.first_unserved_hour is None:
+    st.success("All modeled load supplied for the selected outage duration.")
+else:
+    st.warning(f"First unmet demand in hour {outage.first_unserved_hour + 1} (day {outage.first_unserved_hour // 24 + 1}).")
+outage_df = pd.DataFrame(outage.rows).set_index("hour")
+st.line_chart(outage_df[["demand_kwh", "solar_kwh", "battery_delivered_kwh", "generator_kwh", "unmet_kwh"]])
+st.download_button("Download outage CSV", outage_df.to_csv().encode("utf-8"),
+                   "outage_simulation.csv", "text/csv")
+st.info("Illustrative hourly averages only. Fuel burn is fixed per running hour; no starting surges, generator minimum loading, battery BMS, temperature, shading, weather forecasts, or equipment interconnection constraints are modeled.")
