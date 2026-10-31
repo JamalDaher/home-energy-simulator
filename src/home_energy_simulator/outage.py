@@ -40,7 +40,7 @@ def simulate_outage(
     if generator_fuel_available_liters is not None and generator_fuel_available_liters < 0:
         raise ValueError("Fuel available must not be negative")
     # Reuse dispatch model one hour at a time to carry SOC across days.
-    stored_soc = config.initial_soc
+    stored_soc = config.initial_soc if config.battery_kwh > 0 else 0.0
     remaining_fuel = generator_fuel_available_liters
     rows = []
     gen_hours = 0
@@ -54,8 +54,8 @@ def simulate_outage(
         step_config = SystemConfig(
             solar_kw=config.solar_kw,
             battery_kwh=config.battery_kwh,
-            minimum_soc=config.minimum_soc,
-            initial_soc=stored_soc,
+            minimum_soc=config.minimum_soc if config.battery_kwh > 0 else 0.0,
+            initial_soc=max(config.minimum_soc, stored_soc) if config.battery_kwh > 0 else 0.0,
             charge_efficiency=config.charge_efficiency,
             discharge_efficiency=config.discharge_efficiency,
             inverter_kw=config.inverter_kw,
