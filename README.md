@@ -1,6 +1,6 @@
 # Home Energy Simulator
 
-[**Launch Live Demo**](https://home-energy-simulator.streamlit.app) · [**GitHub Release v1.0.0**](https://github.com/JamalDaher/home-energy-simulator/releases/tag/v1.0.0)
+[**Project Portfolio & Case Study**](https://jamaldaher.github.io/home-energy-simulator/) · [**Launch Live Demo**](https://home-energy-simulator.streamlit.app) · [**GitHub Release v1.0.0**](https://github.com/JamalDaher/home-energy-simulator/releases/tag/v1.0.0)
 
 **Version 1.0** — Python engineering portfolio application for exploring residential solar, LiFePO4 battery storage, generators and power-outage resilience.
 
@@ -49,6 +49,7 @@ The scenario workspace's PDF currently uses the unlimited-fuel legacy outage sim
 - `src/home_energy_simulator/` — tested simulation and reporting modules
 - `tests/` — unit and regression tests
 - `docs/` — modeling notes and release guide
+- `portfolio/` — GitHub Pages engineering case study and application screenshots
 - `.github/workflows/ci.yml` — automated test workflow
 
 ## Limitations
