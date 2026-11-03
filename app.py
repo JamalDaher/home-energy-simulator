@@ -938,19 +938,14 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
                     + years * comparison_df["Annual operating cost ($)"]
                 ).round(2)
             st.session_state["backup_comparison_results"] = comparison_df
-    # Session state can retain older comparison tables after a Streamlit deployment.
-    required_comparison_columns = {
-        "Configuration", "Demand served (%)", "Fuel cost ($)",
-        "Equipment + installation ($)", "Annual operating cost ($)",
-        "5-year ownership ($)", "10-year ownership ($)", "20-year ownership ($)",
-    }
+    # Session state can retain older comparison tables after a deployment.
+    from home_energy_simulator.comparison_cache import is_current_comparison_table
     cached_comparison = st.session_state.get("backup_comparison_results")
-    if cached_comparison is not None and not required_comparison_columns.issubset(
-        set(cached_comparison.columns)
-    ):
+    if cached_comparison is not None and not is_current_comparison_table(cached_comparison):
         del st.session_state["backup_comparison_results"]
-        st.info("Previous comparison results use an older format. Click Compare backup "
-                "configurations to recalculate with the latest cost assumptions.")
+        st.info("Previous comparison results use an older or incomplete format. "
+                "Click Compare backup configurations to recalculate.")
+
     if "backup_comparison_results" in st.session_state:
         summary_df = st.session_state["backup_comparison_results"]
         st.markdown("#### Comparison results")
