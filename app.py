@@ -765,6 +765,40 @@ with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
                        "The outage fuel curve and inventory are controlled by the "
                        "Generator Fuel & Runtime Calculator above; they are not "
                        "automatically copied from the profile runtime worksheet.")
+        st.markdown("#### Backup endurance")
+        st.caption("Fuel inventory and battery charge over the outage. Hour 1 is the first modeled interval.")
+        endurance = pd.DataFrame(index=integrated_df.index)
+        if outage_fuel_inventory is not None:
+            endurance[f"Fuel remaining ({outage_fuel_unit})"] = (
+                integrated_df["generator_fuel_remaining"].astype(float) / outage_fuel_conversion
+            )
+        if "soc" in integrated_df.columns and battery > 0 and not generator_only:
+            endurance["Battery charge (%)"] = integrated_df["soc"].astype(float) * 100.0
+        if not endurance.empty:
+            # Separate charts preserve each quantity's units and avoid misleading dual axes.
+            if f"Fuel remaining ({outage_fuel_unit})" in endurance:
+                st.line_chart(endurance[[f"Fuel remaining ({outage_fuel_unit})"]])
+            if "Battery charge (%)" in endurance:
+                st.line_chart(endurance[["Battery charge (%)"]])
+            st.download_button("Download endurance timeline CSV",
+                               endurance.to_csv().encode("utf-8"),
+                               "outage_endurance_timeline.csv", "text/csv")
+        else:
+            st.info("Enter finite generator fuel or enable battery storage to plot endurance.")
+        if outage_fuel_inventory is not None and gen_enabled and gen_kw > 0:
+            fuel_left = integrated_df["generator_fuel_remaining"].astype(float)
+            empty_hours = fuel_left.le(1e-9)
+            if empty_hours.any():
+                first_empty = int(empty_hours[empty_hours].index[0]) + 1
+                st.warning(f"Modeled fuel inventory reaches zero by the end of hour {first_empty}. "
+                           "Generator output may stop earlier if less than a full hour's fuel remains.")
+            else:
+                st.caption("No complete fuel depletion within the simulated interval. "
+                           "The generator may still be unable to run another full hour.")
+        if integrated.first_unserved_hour is not None:
+            st.caption(f"First hour with unmet household demand: {integrated.first_unserved_hour + 1}. "
+                       "This may be caused by generation limits, startup assumptions, or fuel shortage; "
+                       "it does not necessarily mark fuel exhaustion.")
         st.line_chart(integrated_df[["generator_kwh", "generator_fuel_used", "unmet_kwh"]])
         st.download_button("Download integrated outage CSV", integrated_df.to_csv().encode("utf-8"),
                            "integrated_outage.csv", "text/csv")
