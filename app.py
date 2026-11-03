@@ -812,6 +812,23 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
                "Grid power is disabled for every scenario. This is a modeled comparison, not equipment sizing approval.")
     st.caption("Generator-only: generator, no solar or battery. Battery-only: battery, no solar or generator. "
                "Hybrid: generator, solar and battery using the sidebar capacities.")
+    st.markdown("#### Equipment and installation cost assumptions")
+    cc1, cc2, cc3 = st.columns(3)
+    with cc1:
+        generator_cost = st.number_input("Generator purchase + installation ($)",
+                                         min_value=0.0, value=0.0, step=100.0,
+                                         key="comparison_generator_cost")
+    with cc2:
+        battery_cost = st.number_input("Battery + inverter installed ($)",
+                                       min_value=0.0, value=0.0, step=100.0,
+                                       key="comparison_battery_cost")
+    with cc3:
+        solar_cost = st.number_input("Solar array installed ($)",
+                                     min_value=0.0, value=0.0, step=100.0,
+                                     key="comparison_solar_cost")
+    st.caption("Enter incremental costs for each component. Defaults of $0 mean costs have not "
+               "been provided, not that equipment is free. Fuel costs use the selected outage "
+               "fuel model; maintenance, replacement, financing, taxes and grid savings are excluded.")
     comparison_enabled = st.button("Compare backup configurations", key="run_backup_comparison")
     if comparison_enabled:
         if link_profile_fuel and profile_fuel_error:
@@ -848,6 +865,15 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
                     f"Fuel used ({outage_fuel_unit})": round(
                         result.generator_fuel_used / outage_fuel_conversion, 2),
                     "Fuel cost ($)": round(result.generator_fuel_cost, 2),
+                    "Equipment + installation ($)": round(
+                        (generator_cost if cmp_generator else 0.0)
+                        + (battery_cost if cmp_battery > 0 else 0.0)
+                        + (solar_cost if cmp_solar > 0 else 0.0), 2),
+                    "Modeled outage cost ($)": round(
+                        (generator_cost if cmp_generator else 0.0)
+                        + (battery_cost if cmp_battery > 0 else 0.0)
+                        + (solar_cost if cmp_solar > 0 else 0.0)
+                        + result.generator_fuel_cost, 2),
                     "Final battery charge (%)": round(result.final_soc * 100, 1)
                     if cmp_battery > 0 else None,
                 })
@@ -858,6 +884,11 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
                      hide_index=True, use_container_width=True)
         st.bar_chart(st.session_state["backup_comparison_results"].set_index(
             "Configuration")[["Demand served (%)"]])
+        st.markdown("#### Cost comparison")
+        st.bar_chart(st.session_state["backup_comparison_results"].set_index(
+            "Configuration")[["Equipment + installation ($)", "Fuel cost ($)"]])
+        st.caption("Modeled outage cost is a one-time equipment and installation estimate plus "
+                   "fuel burned during one simulated outage, not lifetime cost or payback.")
         st.download_button("Download comparison CSV",
                            st.session_state["backup_comparison_results"].to_csv(index=False).encode("utf-8"),
                            "backup_system_comparison.csv", "text/csv")
