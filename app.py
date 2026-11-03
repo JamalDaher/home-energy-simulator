@@ -625,6 +625,46 @@ with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
         use_finite_fuel = st.checkbox("Limit by available fuel inventory", value=fuel_kind != "natural_gas")
         inventory = st.number_input(f"Available fuel ({fuel_unit})", min_value=0.0, value=20.0, step=1.0,
                                     disabled=not use_finite_fuel)
+    st.markdown("#### Link generator profile to outage model")
+    link_profile_fuel = st.checkbox(
+        "Use selected generator profile fuel settings for outage simulation",
+        value=False, key="link_generator_profile_fuel",
+        help="Uses the profile's user-entered constant consumption estimate. "
+             "Disable to use the detailed fuel curve above.",
+    )
+    profile_fuel_error = None
+    profile_inventory_internal = None
+    if link_profile_fuel:
+        profile_rate = float(fuel_rate)
+        profile_amount = float(fuel_available)
+        if selected_fuel == "Diesel":
+            profile_fuel_error = "Diesel is not supported by the outage fuel model."
+        elif gen_kw <= 0:
+            profile_fuel_error = "Enter a positive generator continuous running rating."
+        elif profile_rate <= 0:
+            profile_fuel_error = "Enter a positive consumption rate in the profile fuel worksheet."
+        elif selected_fuel == "Propane":
+            st.caption("Propane profile quantities are in pounds; the outage engine uses liquid gallons.")
+            propane_lb_per_gal = st.number_input(
+                "Propane conversion (lb per liquid gallon)", min_value=0.1,
+                value=4.2, step=0.1,
+                help="Approximate conversion; verify against fuel temperature and supplier data.")
+            profile_rate_internal = profile_rate / propane_lb_per_gal
+            profile_inventory_internal = profile_amount / propane_lb_per_gal
+            profile_kind = "propane"
+        elif selected_fuel == "Natural gas":
+            profile_rate_internal = profile_rate  # profile ft³/h; fuel engine uses ft³/h
+            profile_inventory_internal = profile_amount
+            profile_kind = "natural_gas"
+        else:
+            profile_rate_internal = profile_rate  # gasoline profile gallons/h
+            profile_inventory_internal = profile_amount
+            profile_kind = "gasoline"
+        if profile_fuel_error:
+            st.error(profile_fuel_error)
+        else:
+            st.info("Profile-linked outage mode assumes constant fuel consumption while generating. "
+                    "The entered fuel quantity is finite; no automatic refill is assumed.")
     fuel_model = FuelModel(fuel_kind, rated_fuel_kw, idle_rate * fuel_to_internal,
                            full_rate * fuel_to_internal, fuel_price / fuel_to_internal)
     fuel_result = fuel_model.estimate(load_fuel_kw, operation_hours,
@@ -643,21 +683,35 @@ with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
 st.html('<span id="fuel-aware-outage" class="sim-section-anchor"></span>')
 with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
     st.caption("Uses the household load, solar, battery and generator settings above, with load-dependent fuel consumption from the v0.7 fuel model.")
+    outage_fuel_model = fuel_model
+    outage_fuel_inventory = inventory * fuel_to_internal if use_finite_fuel else None
+    outage_fuel_unit = fuel_unit
+    outage_fuel_conversion = fuel_to_internal
+    if link_profile_fuel and not profile_fuel_error:
+        outage_fuel_model = FuelModel(profile_kind, max(gen_kw, 0.1),
+                                      profile_rate_internal, profile_rate_internal, 0.0)
+        outage_fuel_inventory = profile_inventory_internal
+        outage_fuel_unit = fuel_units
+        outage_fuel_conversion = (profile_inventory_internal / fuel_available
+                                  if fuel_available > 0 else
+                                  (1.0 / propane_lb_per_gal if selected_fuel == "Propane" else 1.0))
+    elif link_profile_fuel:
+        st.warning("Profile fuel inputs are invalid; showing the standard fuel-model scenario.")
     integrated = simulate_outage(
         SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
                      initial_soc=initial / 100, generator_enabled=gen_enabled,
                      generator_kw=gen_kw, grid_available=False),
-        loads, sun, days=outage_days, fuel_model=fuel_model,
-        fuel_available=inventory * fuel_to_internal if use_finite_fuel else None,
-    ) if not gen_enabled or gen_kw <= rated_fuel_kw else None
+        loads, sun, days=outage_days, fuel_model=outage_fuel_model,
+        fuel_available=outage_fuel_inventory,
+    ) if not gen_enabled or gen_kw <= (gen_kw if link_profile_fuel and not profile_fuel_error else rated_fuel_kw) else None
     if integrated is None:
         st.error("Set the fuel model's continuous generator rating at least as high as the generator power in the sidebar.")
     else:
         im1, im2, im3, im4 = st.columns(4)
         im1.metric("Demand served", f"{integrated.fraction_demand_served:.1%}")
-        im2.metric("Fuel consumed", f"{integrated.generator_fuel_used / fuel_to_internal:.2f} {fuel_unit}")
+        im2.metric("Fuel consumed", f"{integrated.generator_fuel_used / outage_fuel_conversion:.2f} {outage_fuel_unit}")
         im3.metric("Fuel remaining", "Unlimited" if integrated.generator_fuel_remaining is None else
-                   f"{integrated.generator_fuel_remaining / fuel_to_internal:.2f} {fuel_unit}")
+                   f"{integrated.generator_fuel_remaining / outage_fuel_conversion:.2f} {outage_fuel_unit}")
         im4.metric("Generator fuel cost", f"${integrated.generator_fuel_cost:,.2f}")
         if integrated.first_unserved_hour is not None:
             st.warning(f"First unmet demand in hour {integrated.first_unserved_hour + 1}.")
