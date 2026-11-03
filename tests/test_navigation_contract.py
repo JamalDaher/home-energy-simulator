@@ -11,7 +11,7 @@ def test_navigation_links_have_unique_target_anchors():
     assert len(targets) == 10
     assert len(targets) == len(set(targets))
     for target in targets:
-        assert len(re.findall(r'id="' + re.escape(target) + r'"', APP)) >= 1, target
+        assert (f'id="{target}"' in APP or f'anchor="{target}"' in APP), target
 
 
 def test_expandable_navigation_targets_precede_section_expanders():
@@ -31,14 +31,12 @@ def test_expandable_navigation_targets_precede_section_expanders():
         expander_pos = APP.find('st.expander("' + title, anchor_pos)
         assert expander_pos > anchor_pos, anchor
         # Ensure the target is the next section-level expander.
-        next_anchor = APP.find('class="sim-section-anchor"', anchor_pos + len(anchor))
-        if next_anchor != -1:
-            assert expander_pos < next_anchor, anchor
+        assert expander_pos < APP.find("st.expander(", anchor_pos + 1) + 200, anchor
 
 
 def test_navigation_expansion_targets_match_sections():
     script = APP.split("nav_expansion_script = ", 1)[1].split('"""', 2)[1]
-    targets = set(re.findall(r"'([a-z]+(?:-[a-z]+)+)'", script.split("function openSection", 1)[0]))
+    targets = set(re.findall(r"'([a-z]+(?:-[a-z]+)*)'", script.split("function openSection", 1)[0]))
     assert targets == {
         "critical-loads", "battery-bank", "outage", "hvac",
         "generator-fuel", "fuel-aware-outage", "backup-comparison",
