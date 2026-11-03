@@ -627,28 +627,30 @@ st.html('<span id="generator-fuel" class="sim-section-anchor"></span>')
 with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
     st.caption("Two fuel input sources are available: a load-dependent detailed fuel curve below, or the generator profile in the sidebar. Choose which one drives the integrated outage simulation.")
     from home_energy_simulator.fuel import FuelModel
-    fc1, fc2, fc3 = st.columns(3)
-    with fc1:
-        fuel_kind = st.selectbox("Generator fuel type", ["gasoline", "propane", "natural_gas"],
-                                 format_func=lambda x: {"gasoline": "Gasoline", "propane": "Propane", "natural_gas": "Natural gas"}[x])
-        fuel_unit = "liters" if fuel_kind == "natural_gas" else "gallons"
-        fuel_to_internal = 1.0 / 28.316846592 if fuel_kind == "natural_gas" else 1.0
-        rated_fuel_kw = st.number_input("Generator continuous rating (kW)", min_value=0.1, value=10.0, step=0.5)
-        load_fuel_kw = st.number_input("Steady electrical output (kW)", min_value=0.0,
-                                      max_value=float(rated_fuel_kw), value=min(5.0, float(rated_fuel_kw)), step=0.5)
-    with fc2:
-        idle_rate = st.number_input(f"Idle fuel rate ({fuel_unit}/hour)", min_value=0.0, value=0.5 if fuel_kind != "natural_gas" else 850.0, step=0.1)
-        full_rate = st.number_input(f"Full-load fuel rate ({fuel_unit}/hour)", min_value=float(idle_rate),
-                                    value=max(float(idle_rate), 2.0 if fuel_kind != "natural_gas" else 3680.0), step=0.1)
-        fuel_price = st.number_input(f"Fuel price ($/{fuel_unit})", min_value=0.0, value=3.0 if fuel_kind != "natural_gas" else 0.0007, step=0.0001)
-    with fc3:
-        operation_hours = st.number_input("Planned operating hours", min_value=0.0, value=72.0, step=1.0)
-        use_finite_fuel = st.checkbox("Limit by available fuel inventory", value=fuel_kind != "natural_gas")
-        inventory = st.number_input(f"Available fuel ({fuel_unit})", min_value=0.0, value=20.0, step=1.0,
-                                    disabled=not use_finite_fuel)
-    st.markdown("#### Link generator profile to outage model")
+    with st.expander("Detailed fuel curve inputs", expanded=False):
+        fc1, fc2, fc3 = st.columns(3)
+        with fc1:
+            fuel_kind = st.selectbox("Generator fuel type", ["gasoline", "propane", "natural_gas"],
+                                     format_func=lambda x: {"gasoline": "Gasoline", "propane": "Propane", "natural_gas": "Natural gas"}[x])
+            fuel_unit = "liters" if fuel_kind == "natural_gas" else "gallons"
+            fuel_to_internal = 1.0 / 28.316846592 if fuel_kind == "natural_gas" else 1.0
+            rated_fuel_kw = st.number_input("Generator continuous rating (kW)", min_value=0.1, value=10.0, step=0.5)
+            load_fuel_kw = st.number_input("Steady electrical output (kW)", min_value=0.0,
+                                          max_value=float(rated_fuel_kw), value=min(5.0, float(rated_fuel_kw)), step=0.5)
+        with fc2:
+            idle_rate = st.number_input(f"Idle fuel rate ({fuel_unit}/hour)", min_value=0.0, value=0.5 if fuel_kind != "natural_gas" else 850.0, step=0.1)
+            full_rate = st.number_input(f"Full-load fuel rate ({fuel_unit}/hour)", min_value=float(idle_rate),
+                                        value=max(float(idle_rate), 2.0 if fuel_kind != "natural_gas" else 3680.0), step=0.1)
+            fuel_price = st.number_input(f"Fuel price ($/{fuel_unit})", min_value=0.0, value=3.0 if fuel_kind != "natural_gas" else 0.0007, step=0.0001)
+        with fc3:
+            operation_hours = st.number_input("Planned operating hours", min_value=0.0, value=72.0, step=1.0)
+            use_finite_fuel = st.checkbox("Limit by available fuel inventory", value=fuel_kind != "natural_gas")
+            inventory = st.number_input(f"Available fuel ({fuel_unit})", min_value=0.0, value=20.0, step=1.0,
+                                        disabled=not use_finite_fuel)
+    st.markdown("#### Choose fuel settings for outage simulation")
+    st.caption("The sidebar worksheet is the quick constant-rate option. The detailed curve above models consumption at different generator loads.")
     link_profile_fuel = st.checkbox(
-        "Use selected generator profile fuel settings for outage simulation",
+        "Use sidebar generator profile (constant consumption)",
         value=False, key="link_generator_profile_fuel",
         help="Uses the profile's user-entered constant consumption estimate. "
              "Disable to use the detailed fuel curve above.",
@@ -702,6 +704,7 @@ with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
                    f"Rated: {rated_fuel_kw:.1f} kW | "
                    f"Idle/full rates: {idle_rate:.2f}/{full_rate:.2f} {fuel_unit}/h | "
                    f"Inventory: {'unlimited' if not use_finite_fuel else str(inventory) + ' ' + fuel_unit}")
+    st.markdown("#### Detailed fuel curve estimate")
     fuel_model = FuelModel(fuel_kind, rated_fuel_kw, idle_rate * fuel_to_internal,
                            full_rate * fuel_to_internal, fuel_price / fuel_to_internal)
     fuel_result = fuel_model.estimate(load_fuel_kw, operation_hours,
