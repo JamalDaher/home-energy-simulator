@@ -7,6 +7,22 @@ from datetime import date
 from home_energy_simulator.loads import Appliance, default_appliances, hourly_load_kw, daily_energy_kwh
 
 st.set_page_config(page_title="Home Energy Simulator", layout="wide")
+st.markdown(
+    """
+    <style>
+    /* Tighten Streamlit's default empty area above the dashboard. */
+    .stAppViewContainer .block-container {
+        padding-top: 1.25rem;
+    }
+    @media (max-width: 768px) {
+        .stAppViewContainer .block-container {
+            padding-top: 0.75rem;
+        }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 st.title("Home Energy Simulator · v1.0")
 st.caption("Solar · Battery · Generator · Outage resilience · Cost comparison | Educational engineering model")
 st.markdown(
