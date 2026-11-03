@@ -14,9 +14,9 @@ st.markdown(
     /* Tighten Streamlit's default empty area above the dashboard. */
     div[data-testid="stMetric"] {background:rgba(105,132,160,.09);border:1px solid rgba(105,132,160,.2);border-radius:14px;padding:16px}
     div[data-testid="stMetric"] label {font-weight:650}
-    .sim-section-anchor {display:block;height:1px;scroll-margin-top:110px}
+    .sim-section-anchor {display:block;height:1px;scroll-margin-top:72px}
     /* Keep anchored accordion titles below Streamlit's top toolbar. */
-    [data-testid="stExpander"] {scroll-margin-top:110px}
+    [data-testid="stExpander"] {scroll-margin-top:72px}
     div[data-testid="stExpander"] {border-radius:14px;overflow:hidden;margin-bottom:12px}
     div[data-testid="stExpander"] details summary {font-weight:650;font-size:1.08rem}
     .stAppViewContainer .block-container {
@@ -620,3 +620,8 @@ with st.expander("Scenario Workspace & PDF Reports (v1.0)", expanded=False):
         except ValueError as exc:
             st.error(f"Unable to simulate scenario: {exc}")
     st.info("Scenario JSON stores system settings and hourly load/solar profiles, not fuel-model settings. PDF reports therefore use the legacy unlimited-fuel dispatch model; use the Integrated Fuel-Aware Outage panel for fuel-limited analysis.")
+
+# Provide enough scroll runway for anchors near the end of the page even when
+# every engineering tool is collapsed. Without this, the browser hits the
+# bottom of the document before the target can reach the top of the viewport.
+st.html('<div aria-hidden="true" class="sim-scroll-runway"></div><style>.sim-scroll-runway{height:65vh;pointer-events:none}@media(max-width:768px){.sim-scroll-runway{height:75vh}}</style>')
