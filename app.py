@@ -267,7 +267,8 @@ fc1, fc2, fc3 = st.columns(3)
 with fc1:
     fuel_kind = st.selectbox("Generator fuel type", ["gasoline", "propane", "natural_gas"],
                              format_func=lambda x: {"gasoline": "Gasoline", "propane": "Propane", "natural_gas": "Natural gas"}[x])
-    fuel_unit = "liters" if fuel_kind == "natural_gas" else "gallons"\n    fuel_to_internal = 1.0 / 28.316846592 if fuel_kind == "natural_gas" else 1.0
+    fuel_unit = "liters" if fuel_kind == "natural_gas" else "gallons"
+    fuel_to_internal = 1.0 / 28.316846592 if fuel_kind == "natural_gas" else 1.0
     rated_fuel_kw = st.number_input("Generator continuous rating (kW)", min_value=0.1, value=10.0, step=0.5)
     load_fuel_kw = st.number_input("Steady electrical output (kW)", min_value=0.0,
                                   max_value=float(rated_fuel_kw), value=min(5.0, float(rated_fuel_kw)), step=0.5)
