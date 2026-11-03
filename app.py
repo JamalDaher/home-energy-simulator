@@ -1,4 +1,5 @@
 """Streamlit dashboard for hourly energy simulation."""
+import inspect
 import pandas as pd
 import streamlit as st
 from home_energy_simulator import SystemConfig, demo_profiles, simulate, totals
@@ -39,7 +40,7 @@ st.html('<span id="simulator-top" aria-hidden="true"></span>')
 st.title("Home Energy Simulator · v1.0")
 # Render the fixed shortcut with st.html rather than Markdown, whose HTML
 # sanitization/rendering can prevent positioned links from appearing.
-st.html("""
+back_to_top_html = """
 <style>
   .sim-back-to-top {
     position: fixed !important;
@@ -58,6 +59,12 @@ st.html("""
     font-weight: 700;
     text-decoration: none !important;
     box-shadow: 0 4px 14px rgba(0,0,0,.3);
+    transition: opacity 180ms ease, visibility 180ms ease;
+  }
+  .sim-back-to-top.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
   .sim-back-to-top:hover, .sim-back-to-top:focus-visible {
     background: #365779;
@@ -69,7 +76,34 @@ st.html("""
 </style>
 <a class="sim-back-to-top" href="#simulator-top"
    title="Back to top" aria-label="Back to top">↑</a>
-""")
+"""
+# Streamlit versions supporting inline JavaScript can follow the actual
+# main scroll container. On older versions keep the working button visible.
+if "unsafe_allow_javascript" in inspect.signature(st.html).parameters:
+    st.html(back_to_top_html + """
+<script>
+(() => {
+  const button = document.querySelector('.sim-back-to-top');
+  if (!button) return;
+  const findScroller = () =>
+    document.querySelector('[data-testid="stAppViewContainer"] [data-testid="stMain"]')
+    || document.querySelector('[data-testid="stAppViewContainer"]')
+    || document.scrollingElement;
+  const scroller = findScroller();
+  const position = () => Math.max(
+    scroller?.scrollTop || 0,
+    document.scrollingElement?.scrollTop || 0,
+    window.scrollY || 0
+  );
+  const update = () => button.classList.toggle('is-hidden', position() < 240);
+  update();
+  scroller?.addEventListener('scroll', update, {passive: true});
+  window.addEventListener('scroll', update, {passive: true});
+})();
+</script>
+""", unsafe_allow_javascript=True)
+else:
+    st.html(back_to_top_html)
 st.caption("Solar · Battery · Generator · Outage resilience · Cost comparison | Educational engineering model")
 st.markdown(
     "**Jump to section:** "
