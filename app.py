@@ -20,20 +20,22 @@ st.markdown(
 
 with st.sidebar:
     st.header("System configuration")
-    grid = st.checkbox("Grid available", value=False)
-    gen_enabled = st.checkbox("Generator enabled", value=False)
+    generator_only = st.checkbox("Generator-only mode", value=False,
+                                 help="Run on generator power without grid, solar, or battery contribution.")
+    grid = st.checkbox("Grid available", value=False, disabled=generator_only)
+    gen_enabled = st.checkbox("Generator enabled", value=False, disabled=generator_only)
     # Keep optional settings in session state when their widgets are hidden.
     if "generator_power_setting" not in st.session_state:
         st.session_state.generator_power_setting = 5.0
-    if gen_enabled:
+    if gen_enabled or generator_only:
         gen_kw = st.slider("Generator power (kW)", 0.0, 20.0,
                            st.session_state.generator_power_setting, 0.5)
         st.session_state.generator_power_setting = gen_kw
     else:
         gen_kw = st.session_state.generator_power_setting
     st.divider()
-    solar = st.slider("Solar array (kW)", 0.0, 20.0, 4.8, 0.2)
-    use_solar = st.checkbox("Use location and seasonal solar model", value=True)
+    solar = st.slider("Solar array (kW)", 0.0, 20.0, 4.8, 0.2, disabled=generator_only)
+    use_solar = st.checkbox("Use location and seasonal solar model", value=True, disabled=generator_only)
     solar_defaults = {
         "latitude": 34.27, "longitude": -88.41, "day": date.today(),
         "tilt": 30, "azimuth": 180, "clouds": 1.0,
@@ -41,7 +43,7 @@ with st.sidebar:
     if "seasonal_settings" not in st.session_state:
         st.session_state.seasonal_settings = solar_defaults.copy()
     settings = st.session_state.seasonal_settings
-    if use_solar:
+    if use_solar and not generator_only:
         latitude = st.number_input("Latitude (degrees)", -90.0, 90.0, settings["latitude"], 0.1)
         longitude = st.number_input("Longitude (degrees)", -180.0, 180.0, settings["longitude"], 0.1)
         day = st.date_input("Simulation date", value=settings["day"])
@@ -55,9 +57,17 @@ with st.sidebar:
     else:
         latitude, longitude, day = settings["latitude"], settings["longitude"], settings["day"]
         tilt, azimuth, clouds = settings["tilt"], settings["azimuth"], settings["clouds"]
-    battery = st.slider("Battery capacity (kWh)", 0.0, 60.0, 14.0, 0.5)
-    inverter = st.slider("Battery inverter limit (kW)", 0.0, 20.0, 5.0, 0.5)
-    initial = st.slider("Initial battery charge (%)", 10, 100, 50)
+    battery = st.slider("Battery capacity (kWh)", 0.0, 60.0, 14.0, 0.5, disabled=generator_only)
+    inverter = st.slider("Battery inverter limit (kW)", 0.0, 20.0, 5.0, 0.5, disabled=generator_only)
+    initial = st.slider("Initial battery charge (%)", 10, 100, 50, disabled=generator_only)
+
+if generator_only:
+    grid = False
+    gen_enabled = True
+    solar = 0.0
+    battery = 0.0
+    inverter = 0.0
+    st.sidebar.info("Generator-only mode: grid, solar, and battery are excluded. Generator capacity and load determine unmet demand.")
 
 config = SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
                       initial_soc=initial/100, generator_enabled=gen_enabled,
@@ -110,7 +120,7 @@ st.line_chart(pd.DataFrame({"Household load (kW)": loads}))
 _, demo_sun = demo_profiles()
 sun = solar_factors(SolarConfig(latitude_deg=latitude, longitude_deg=longitude,
                                array_kw=solar, tilt_deg=tilt, azimuth_deg=azimuth,
-                               cloud_factor=clouds), day) if use_solar else demo_sun
+                               cloud_factor=clouds), day) if use_solar and not generator_only else demo_sun
 rows = simulate(config, loads, sun)
 summary = totals(rows)
 a,b,c,d = st.columns(4)
