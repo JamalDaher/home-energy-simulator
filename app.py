@@ -107,13 +107,28 @@ if "unsafe_allow_javascript" in inspect.signature(st.html).parameters:
 else:
     st.html(back_to_top_html)
 st.caption("Solar · Battery · Generator · Outage resilience · Cost comparison | Educational engineering model")
-st.markdown(
-    "**Jump to section:** "
-    "[Household Loads](#loads) · [Battery Bank](#battery-bank) · "
-    "[Outage Simulator](#outage) · [HVAC Sizing](#hvac) · "
-    "[Generator Fuel](#generator-fuel) · [Fuel-Aware Outage](#fuel-aware-outage) · "
-    "[Optimization](#optimization) · [Scenario Workspace](#workspace)"
-)
+st.html("""
+<style>
+.sim-nav {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 22px}
+.sim-nav a {display:block;text-decoration:none!important;border:1px solid rgba(116,144,172,.3);
+  background:rgba(116,144,172,.08);border-radius:12px;padding:13px 12px;color:inherit!important;
+  font-size:.92rem;font-weight:600;line-height:1.3;transition:background .15s,border-color .15s}
+.sim-nav a:hover,.sim-nav a:focus-visible {background:rgba(116,144,172,.19);border-color:rgba(116,144,172,.65)}
+.sim-nav a small {display:block;font-size:.72rem;opacity:.65;margin-top:4px;font-weight:400}
+@media(max-width:800px){.sim-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:440px){.sim-nav{grid-template-columns:1fr 1fr;gap:7px}.sim-nav a{padding:10px;font-size:.82rem}}
+</style>
+<nav aria-label="Simulator sections" class="sim-nav">
+<a href="#loads">⚡ Household loads<small>Appliances & daily demand</small></a>
+<a href="#battery-bank">🔋 Battery bank<small>Storage & runtime</small></a>
+<a href="#outage">🏠 Outage simulator<small>Whole-home resilience</small></a>
+<a href="#hvac">❄️ HVAC sizing<small>Startup & generator loads</small></a>
+<a href="#generator-fuel">⛽ Generator fuel<small>Consumption & cost</small></a>
+<a href="#fuel-aware-outage">🕒 Fuel-aware outage<small>Multi-day backup</small></a>
+<a href="#optimization">📈 Optimization<small>Compare configurations</small></a>
+<a href="#workspace">📁 Workspace<small>Scenarios & reports</small></a>
+</nav>
+""")
 
 
 with st.sidebar:
