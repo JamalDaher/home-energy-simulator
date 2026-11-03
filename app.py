@@ -915,48 +915,55 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
         st.info("Previous comparison results use an older format. Click Compare backup "
                 "configurations to recalculate with the latest cost assumptions.")
     if "backup_comparison_results" in st.session_state:
-        st.dataframe(st.session_state["backup_comparison_results"],
-                     hide_index=True, use_container_width=True)
-        st.bar_chart(st.session_state["backup_comparison_results"].set_index(
-            "Configuration")[["Demand served (%)"]])
-        st.markdown("#### Decision summary")
         summary_df = st.session_state["backup_comparison_results"]
+        st.markdown("#### Comparison results")
         if generator_cost <= 0 or (battery > 0 and battery_cost <= 0) or (solar > 0 and solar_cost <= 0):
-            st.warning("One or more equipment costs are zero or unspecified; ownership cost rankings may be misleading.")
+            st.warning("Some equipment costs are zero or unspecified. Cost rankings may be misleading.")
         if battery <= 0:
             st.info("Battery capacity is zero; battery-only cannot supply power.")
         if solar <= 0:
             st.info("Solar capacity is zero; hybrid has no solar generation.")
-        st.caption("Comparison scenarios enable the configured generator independently of the main dashboard toggle.")
         best_coverage = summary_df.loc[summary_df["Demand served (%)"].idxmax()]
-        st.write("Highest modeled demand coverage:", best_coverage["Configuration"],
-                 "—", str(best_coverage["Demand served (%)"]) + "%")
+        summary_cols = st.columns(2)
+        summary_cols[0].metric("Highest demand coverage", str(best_coverage["Demand served (%)"]) + "%")
+        summary_cols[0].caption(str(best_coverage["Configuration"]))
         if (generator_cost > 0 and (battery <= 0 or battery_cost > 0)
                 and (solar <= 0 or solar_cost > 0)):
             cheapest = summary_df.loc[summary_df["10-year ownership ($)"].idxmin()]
-            st.write("Lowest estimated 10-year ownership cost:", cheapest["Configuration"],
-                     "— $", round(cheapest["10-year ownership ($)"], 2))
-        st.caption("Rankings are based on modeled assumptions; ties use worksheet order. "
-                   "Cost and demand coverage measure different outcomes.")
-        st.markdown("#### Long-term ownership projections")
-        st.dataframe(st.session_state["backup_comparison_results"][[
-            "Configuration", "Annual operating cost ($)", "5-year ownership ($)",
-            "10-year ownership ($)", "20-year ownership ($)"
-        ]], hide_index=True, use_container_width=True)
-        st.bar_chart(st.session_state["backup_comparison_results"].set_index(
-            "Configuration")[["5-year ownership ($)", "10-year ownership ($)",
-                                "20-year ownership ($)"]])
-        st.markdown("#### Cost comparison")
-        st.bar_chart(st.session_state["backup_comparison_results"].set_index(
-            "Configuration")[["Equipment + installation ($)", "Fuel cost ($)"]])
-        st.caption("Modeled outage cost is a one-time equipment and installation estimate plus "
-                   "fuel burned during one simulated outage, not lifetime cost or payback.")
-        st.download_button("Download comparison CSV",
-                           st.session_state["backup_comparison_results"].to_csv(index=False).encode("utf-8"),
-                           "backup_system_comparison.csv", "text/csv")
-        st.caption("Results are snapshots from the last comparison run. Rerun after changing settings. "
-                   "The outage engine skips generator operation when fuel cannot cover a full hour; "
-                   "starting surges and transfer-switch constraints are not modeled.")
+            summary_cols[1].metric("Lowest 10-year cost", "$" + format(cheapest["10-year ownership ($)"], ",.0f"))
+            summary_cols[1].caption(str(cheapest["Configuration"]))
+        else:
+            summary_cols[1].metric("10-year cost ranking", "Incomplete")
+            summary_cols[1].caption("Enter equipment prices to compare ownership costs.")
+        overview_tab, cost_tab, details_tab = st.tabs([
+            "Power reliability", "Ownership costs", "Detailed results"
+        ])
+        with overview_tab:
+            st.dataframe(summary_df[[
+                "Configuration", "Demand served (%)", "First unmet hour",
+                "Generator hours", "Final battery charge (%)"
+            ]], hide_index=True, use_container_width=True)
+            st.bar_chart(summary_df.set_index("Configuration")[["Demand served (%)"]])
+        with cost_tab:
+            st.dataframe(summary_df[[
+                "Configuration", "Annual operating cost ($)", "5-year ownership ($)",
+                "10-year ownership ($)", "20-year ownership ($)"
+            ]], hide_index=True, use_container_width=True)
+            st.bar_chart(summary_df.set_index("Configuration")[["10-year ownership ($)"]])
+            with st.expander("Upfront equipment and outage fuel costs", expanded=False):
+                st.dataframe(summary_df[[
+                    "Configuration", "Equipment + installation ($)",
+                    "Fuel cost ($)", "Modeled outage cost ($)"
+                ]], hide_index=True, use_container_width=True)
+        with details_tab:
+            st.dataframe(summary_df, hide_index=True, use_container_width=True)
+            st.download_button("Download full comparison CSV",
+                               summary_df.to_csv(index=False).encode("utf-8"),
+                               "backup_system_comparison.csv", "text/csv")
+        st.caption("Results are from the last comparison run. Rerun after changing inputs. "
+                   "Generator scenarios use the selected capacity regardless of the dashboard toggle. "
+                   "Cost projections exclude replacement, inflation, financing and grid savings; "
+                   "hourly dispatch does not model starting surges or transfer equipment.")
 
 st.html('<span id="optimization" class="sim-section-anchor"></span>')
 with st.expander("System Optimization (v0.9)", expanded=False):
