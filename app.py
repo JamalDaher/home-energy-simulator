@@ -625,7 +625,7 @@ with st.expander("HVAC & Generator Sizing (v0.6)", expanded=False):
 
 st.html('<span id="generator-fuel" class="sim-section-anchor"></span>')
 with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
-    st.caption("Independent steady-load planning estimate; not yet connected to outage dispatch.")
+    st.caption("Two fuel input sources are available: a load-dependent detailed fuel curve below, or the generator profile in the sidebar. Choose which one drives the integrated outage simulation.")
     from home_energy_simulator.fuel import FuelModel
     fc1, fc2, fc3 = st.columns(3)
     with fc1:
@@ -686,6 +686,22 @@ with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
         else:
             st.info("Profile-linked outage mode assumes constant fuel consumption while generating. "
                     "The entered fuel quantity is finite; no automatic refill is assumed.")
+    st.markdown("#### Active outage fuel assumptions")
+    if link_profile_fuel and not profile_fuel_error:
+        st.success("Using sidebar generator profile for integrated outage calculations.")
+        st.caption(f"Fuel: {selected_fuel} | Generator: {gen_kw:.1f} kW | "
+                   f"Fuel available: {fuel_available:.2f} {fuel_units} | "
+                   f"Constant burn: {fuel_rate:.2f} {fuel_units}/h | "
+                   f"Price: ${profile_fuel_price:.2f}/{fuel_units}")
+        st.caption("Detailed calculator inputs below remain independent planning estimates.")
+    elif link_profile_fuel:
+        st.warning("Sidebar profile selected, but inputs are invalid. Outage results are blocked.")
+    else:
+        st.info("Using the detailed fuel curve and inventory below for integrated outage calculations.")
+        st.caption(f"Fuel: {fuel_kind.replace('_', ' ').title()} | "
+                   f"Rated: {rated_fuel_kw:.1f} kW | "
+                   f"Idle/full rates: {idle_rate:.2f}/{full_rate:.2f} {fuel_unit}/h | "
+                   f"Inventory: {'unlimited' if not use_finite_fuel else str(inventory) + ' ' + fuel_unit}")
     fuel_model = FuelModel(fuel_kind, rated_fuel_kw, idle_rate * fuel_to_internal,
                            full_rate * fuel_to_internal, fuel_price / fuel_to_internal)
     fuel_result = fuel_model.estimate(load_fuel_kw, operation_hours,
@@ -703,7 +719,7 @@ with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
 
 st.html('<span id="fuel-aware-outage" class="sim-section-anchor"></span>')
 with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
-    st.caption("Uses the household load, solar, battery and generator settings above, with load-dependent fuel consumption from the v0.7 fuel model.")
+    st.caption("Uses the household load, solar, battery and generator settings, with the fuel source selected in the generator fuel calculator.")
     outage_fuel_model = fuel_model
     outage_fuel_inventory = inventory * fuel_to_internal if use_finite_fuel else None
     outage_fuel_unit = fuel_unit
@@ -750,7 +766,7 @@ with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
             g3.metric("Fuel cost", f"${integrated.generator_fuel_cost:,.2f}")
             g4.metric("Fuel remaining", "Unlimited" if integrated.generator_fuel_remaining is None
                       else f"{integrated.generator_fuel_remaining:.2f} {integrated.generator_fuel_unit}")
-            if use_finite_fuel:
+            if outage_fuel_inventory is not None:
                 st.caption("Running hours are modeled hourly intervals with generator output, not continuous runtime. "
                            "Fuel inventory may limit operation; see unmet demand and the hourly chart below.")
             else:
@@ -773,7 +789,7 @@ with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
             "Solar supplying power", "Demand unmet", "generator_fuel_used",
             "unmet_kwh"] if c in timeline.columns]],
             use_container_width=True)
-        if use_finite_fuel and integrated.generator_fuel_remaining is not None:
+        if outage_fuel_inventory is not None and integrated.generator_fuel_remaining is not None:
             if integrated.generator_fuel_remaining <= 0:
                 st.warning("The modeled fuel inventory is depleted by the end of the outage.")
             else:
