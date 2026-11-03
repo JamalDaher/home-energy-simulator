@@ -143,15 +143,40 @@ with st.sidebar:
                                  help="Run on generator power without grid, solar, or battery contribution.")
     grid = st.checkbox("Grid available", value=False, disabled=generator_only)
     gen_enabled = st.checkbox("Generator enabled", value=False, disabled=generator_only)
-    # Keep optional settings in session state when their widgets are hidden.
+    # Generator profiles retain user-verified ratings; model names alone do not
+    # establish a safe usable output rating (fuel and configuration matter).
     if "generator_power_setting" not in st.session_state:
         st.session_state.generator_power_setting = 5.0
-    if gen_enabled or generator_only:
-        gen_kw = st.slider("Generator power (kW)", 0.0, 20.0,
-                           st.session_state.generator_power_setting, 0.5)
-        st.session_state.generator_power_setting = gen_kw
+    if "generator_profile_ratings" not in st.session_state:
+        st.session_state.generator_profile_ratings = {
+            "FIRMAN T07571": 0.0,
+            "FIRMAN W03386": 0.0,
+        }
+    profile_name = st.selectbox(
+        "Generator profile",
+        ["Manual / custom", "FIRMAN T07571", "FIRMAN W03386"],
+        help="Saved model profiles use ratings you enter and verify from the generator label/manual.",
+    )
+    if profile_name == "Manual / custom":
+        if gen_enabled or generator_only:
+            gen_kw = st.slider("Generator power (kW)", 0.0, 20.0,
+                               st.session_state.generator_power_setting, 0.5)
+            st.session_state.generator_power_setting = gen_kw
+        else:
+            gen_kw = st.session_state.generator_power_setting
     else:
-        gen_kw = st.session_state.generator_power_setting
+        rated_kw = st.number_input(
+            "Verified running power (kW)", min_value=0.0, max_value=20.0,
+            value=float(st.session_state.generator_profile_ratings[profile_name]),
+            step=0.1, key=f"generator_profile_{profile_name}",
+            help="Enter the continuous running rating for the fuel being used, not the peak/surge rating.",
+        )
+        st.session_state.generator_profile_ratings[profile_name] = rated_kw
+        gen_kw = rated_kw
+        if (gen_enabled or generator_only) and gen_kw == 0:
+            st.warning("Enter the verified running rating before using this profile in simulations.")
+    if gen_enabled or generator_only:
+        st.caption(f"Selected generator: {profile_name} · {gen_kw:.1f} kW running")
     st.divider()
     solar = st.slider("Solar array (kW)", 0.0, 20.0, 4.8, 0.2, disabled=generator_only)
     use_solar = st.checkbox("Use location and seasonal solar model", value=True, disabled=generator_only)
