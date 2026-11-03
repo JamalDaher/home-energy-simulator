@@ -169,7 +169,10 @@ nav_expansion_script = """
     );
     const details = target?.querySelector('details');
     if (details && !details.open) details.open = true;
-    requestAnimationFrame(() => anchor.scrollIntoView({block:'start', behavior:'smooth'}));
+    // Allow the expanded content to settle before positioning the section.
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      anchor.scrollIntoView({block:'start', behavior:'smooth'})
+    ));
   }
   document.addEventListener('click', event => {
     const link = event.target.closest?.('.sim-nav a[href^="#"]');
@@ -177,12 +180,16 @@ nav_expansion_script = """
     const id = decodeURIComponent(link.hash.slice(1));
     if (!ids.has(id)) return;
     event.preventDefault();
-    history.replaceState(null, '', '#' + id);
+    if (location.hash !== '#' + id) history.pushState(null, '', '#' + id);
     openSection(id);
   });
-  if (ids.has(location.hash.slice(1))) {
-    requestAnimationFrame(() => openSection(location.hash.slice(1)));
+  function followHash() {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (ids.has(id)) requestAnimationFrame(() => openSection(id));
   }
+  window.addEventListener('hashchange', followHash);
+  window.addEventListener('popstate', followHash);
+  followHash();
 })();
 </script>
 """
