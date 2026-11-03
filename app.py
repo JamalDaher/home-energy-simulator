@@ -14,7 +14,9 @@ st.markdown(
     /* Tighten Streamlit's default empty area above the dashboard. */
     div[data-testid="stMetric"] {background:rgba(105,132,160,.09);border:1px solid rgba(105,132,160,.2);border-radius:14px;padding:16px}
     div[data-testid="stMetric"] label {font-weight:650}
-    .sim-section-anchor {display:block;scroll-margin-top:24px;height:1px}
+    .sim-section-anchor {display:block;height:1px;scroll-margin-top:110px}
+    /* Keep anchored accordion titles below Streamlit's top toolbar. */
+    [data-testid="stExpander"] {scroll-margin-top:110px}
     div[data-testid="stExpander"] {border-radius:14px;overflow:hidden;margin-bottom:12px}
     div[data-testid="stExpander"] details summary {font-weight:650;font-size:1.08rem}
     .stAppViewContainer .block-container {
@@ -300,7 +302,6 @@ st.download_button("Download simulation CSV", df.to_csv().encode("utf-8"),
 st.info("Load is synthetic. Solar model is approximate clear-sky geometry, not measured weather. Longitude is recorded but hours use local solar time; no time-zone or equation-of-time correction. No surge loads, temperature, fuel or shading modeled.")
 
 
-st.divider()
 st.html('<span id="battery-bank" class="sim-section-anchor"></span>')
 with st.expander("LiFePO4 Battery Bank Designer", expanded=False):
     st.caption('Nominal educational estimates only; verify manufacturer series/parallel approval and electrical protections.')
@@ -330,7 +331,6 @@ with st.expander("LiFePO4 Battery Bank Designer", expanded=False):
         st.warning(str(exc))
 
 
-st.divider()
 st.html('<span id="outage" class="sim-section-anchor"></span>')
 with st.expander("Whole-Home Outage Simulator", expanded=False):
     st.caption("Repeat a synthetic 24-hour household load and the selected solar profile over multiple outage days. The grid is always off.")
@@ -386,7 +386,6 @@ with st.expander("Whole-Home Outage Simulator", expanded=False):
     st.info("Illustrative hourly averages only. Fuel burn is fixed per running hour; no starting surges, generator minimum loading, battery BMS, temperature, shading, weather forecasts, or equipment interconnection constraints are modeled.")
 
 
-st.divider()
 st.html('<span id="hvac" class="sim-section-anchor"></span>')
 with st.expander("HVAC & Generator Sizing (v0.6)", expanded=False):
     st.caption("Nominal running and startup capacity screening. Enter equipment-specific ratings before drawing conclusions.")
@@ -423,7 +422,6 @@ with st.expander("HVAC & Generator Sizing (v0.6)", expanded=False):
     st.warning("Within ratings does NOT guarantee a compressor will start. Motor starting current, surge duration, voltage dip, generator transient response, power factor and transfer equipment are not modeled. Never backfeed a home; consult a qualified electrician.")
 
 
-st.divider()
 st.html('<span id="generator-fuel" class="sim-section-anchor"></span>')
 with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
     st.caption("Independent steady-load planning estimate; not yet connected to outage dispatch.")
@@ -462,7 +460,6 @@ with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
     st.info("Linear idle-to-full-load consumption is illustrative. Use manufacturer-measured fuel rates. Natural gas is entered as gaseous liters at consistent reference conditions; internal calculations use cubic feet. The separate outage simulator uses a fixed hourly fuel-rate model.")
 
 
-st.divider()
 st.html('<span id="fuel-aware-outage" class="sim-section-anchor"></span>')
 with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
     st.caption("Uses the household load, solar, battery and generator settings above, with load-dependent fuel consumption from the v0.7 fuel model.")
@@ -511,7 +508,6 @@ with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
         st.info("Fuel is burned only during modeled generator output. An hour is skipped if insufficient fuel remains for the entire hour; partial-hour generation, starting surges and actual fuel curves are not modeled.")
 
 
-st.divider()
 st.html('<span id="optimization" class="sim-section-anchor"></span>')
 with st.expander("System Optimization (v0.9)", expanded=False):
     st.caption("Compare discrete solar, battery and generator sizes for one repeated-day outage scenario.")
@@ -574,7 +570,6 @@ with st.expander("System Optimization (v0.9)", expanded=False):
     st.info("This is a discrete comparison for a single illustrative outage, not lifetime cost optimization or a statistical reliability estimate. Fuel rates, installation costs and weather are assumptions; electrical feasibility is not checked.")
 
 
-st.divider()
 st.html('<span id="workspace" class="sim-section-anchor"></span>')
 with st.expander("Scenario Workspace & PDF Reports (v1.0)", expanded=False):
     st.caption("Save a snapshot as JSON, reload it for independent analysis, and export a PDF report. Files remain on your device; nothing is saved to a server.")
