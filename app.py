@@ -831,6 +831,7 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
                         solar_kw=cmp_solar, battery_kwh=cmp_battery,
                         inverter_kw=cmp_inverter,
                         initial_soc=initial / 100 if cmp_battery > 0 else 0.0,
+                        minimum_soc=0.1 if cmp_battery > 0 else 0.0,
                         generator_enabled=cmp_generator and gen_kw > 0,
                         generator_kw=gen_kw, grid_available=False,
                     ),
