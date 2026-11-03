@@ -55,3 +55,61 @@ def test_zero_demand():
     r = simulate_outage(SystemConfig(solar_kw=0, battery_kwh=0), [0] * 24, NIGHT)
     assert r.fraction_demand_served == 1
     assert r.first_unserved_hour is None
+
+
+def test_generator_only_comparison_configuration_has_valid_zero_battery_soc():
+    """Regression: comparison must not set minimum SOC above zero without a battery."""
+    cfg = SystemConfig(
+        solar_kw=0, battery_kwh=0, inverter_kw=0,
+        initial_soc=0.0, minimum_soc=0.0,
+        generator_enabled=True, generator_kw=2, grid_available=False,
+    )
+    result = simulate_outage(cfg, ONE_KW, NIGHT, days=1)
+    assert result.fraction_demand_served == pytest.approx(1.0)
+    assert result.generator_hours == 24
+    assert result.final_soc == pytest.approx(0.0)
+
+
+def test_fuel_model_inventory_exhaustion_skips_partial_hour():
+    """One unit per hour with 2.5 units supports exactly two full hours."""
+    from home_energy_simulator.fuel import FuelModel
+    cfg = SystemConfig(
+        solar_kw=0, battery_kwh=0, inverter_kw=0,
+        initial_soc=0, minimum_soc=0,
+        generator_enabled=True, generator_kw=2,
+    )
+    fuel = FuelModel("gasoline", 2, 1, 1, 3)
+    result = simulate_outage(
+        cfg, ONE_KW, NIGHT, days=1, fuel_model=fuel, fuel_available=2.5
+    )
+    assert result.generator_hours == 2
+    assert result.first_unserved_hour == 2
+    assert result.generator_fuel_used == pytest.approx(2)
+    assert result.generator_fuel_remaining == pytest.approx(0.5)
+    assert result.generator_fuel_cost == pytest.approx(6)
+
+
+def test_unlimited_fuel_model_inventory_remains_none():
+    from home_energy_simulator.fuel import FuelModel
+    cfg = SystemConfig(solar_kw=0, battery_kwh=0,
+                       generator_enabled=True, generator_kw=2)
+    result = simulate_outage(
+        cfg, ONE_KW, NIGHT, fuel_model=FuelModel("gasoline", 2, 1, 1, 3),
+        fuel_available=None,
+    )
+    assert result.generator_hours == 72
+    assert result.generator_fuel_remaining is None
+
+
+def test_zero_fuel_inventory_disables_generator_output():
+    from home_energy_simulator.fuel import FuelModel
+    cfg = SystemConfig(solar_kw=0, battery_kwh=0,
+                       generator_enabled=True, generator_kw=2)
+    result = simulate_outage(
+        cfg, ONE_KW, NIGHT, days=1,
+        fuel_model=FuelModel("gasoline", 2, 1, 1),
+        fuel_available=0,
+    )
+    assert result.generator_hours == 0
+    assert result.first_unserved_hour == 0
+    assert result.generator_fuel_used == pytest.approx(0)
