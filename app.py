@@ -22,17 +22,39 @@ with st.sidebar:
     st.header("System configuration")
     grid = st.checkbox("Grid available", value=False)
     gen_enabled = st.checkbox("Generator enabled", value=False)
-    gen_kw = st.slider("Generator power (kW)", 0.0, 20.0, 5.0, 0.5,
-                       disabled=not gen_enabled)
+    # Keep optional settings in session state when their widgets are hidden.
+    if "generator_power_setting" not in st.session_state:
+        st.session_state.generator_power_setting = 5.0
+    if gen_enabled:
+        gen_kw = st.slider("Generator power (kW)", 0.0, 20.0,
+                           st.session_state.generator_power_setting, 0.5)
+        st.session_state.generator_power_setting = gen_kw
+    else:
+        gen_kw = st.session_state.generator_power_setting
     st.divider()
     solar = st.slider("Solar array (kW)", 0.0, 20.0, 4.8, 0.2)
     use_solar = st.checkbox("Use location and seasonal solar model", value=True)
-    latitude = st.number_input("Latitude (degrees)", -90.0, 90.0, 34.27, 0.1)
-    longitude = st.number_input("Longitude (degrees)", -180.0, 180.0, -88.41, 0.1)
-    day = st.date_input("Simulation date", value=date.today())
-    tilt = st.slider("Panel tilt (degrees)", 0, 90, 30)
-    azimuth = st.slider("Panel azimuth (180° = south)", 0, 360, 180)
-    clouds = st.slider("Clear-sky multiplier", 0.0, 1.0, 1.0, 0.05)
+    solar_defaults = {
+        "latitude": 34.27, "longitude": -88.41, "day": date.today(),
+        "tilt": 30, "azimuth": 180, "clouds": 1.0,
+    }
+    if "seasonal_settings" not in st.session_state:
+        st.session_state.seasonal_settings = solar_defaults.copy()
+    settings = st.session_state.seasonal_settings
+    if use_solar:
+        latitude = st.number_input("Latitude (degrees)", -90.0, 90.0, settings["latitude"], 0.1)
+        longitude = st.number_input("Longitude (degrees)", -180.0, 180.0, settings["longitude"], 0.1)
+        day = st.date_input("Simulation date", value=settings["day"])
+        tilt = st.slider("Panel tilt (degrees)", 0, 90, settings["tilt"])
+        azimuth = st.slider("Panel azimuth (180° = south)", 0, 360, settings["azimuth"])
+        clouds = st.slider("Clear-sky multiplier", 0.0, 1.0, settings["clouds"], 0.05)
+        st.session_state.seasonal_settings = dict(
+            latitude=latitude, longitude=longitude, day=day,
+            tilt=tilt, azimuth=azimuth, clouds=clouds,
+        )
+    else:
+        latitude, longitude, day = settings["latitude"], settings["longitude"], settings["day"]
+        tilt, azimuth, clouds = settings["tilt"], settings["azimuth"], settings["clouds"]
     battery = st.slider("Battery capacity (kWh)", 0.0, 60.0, 14.0, 0.5)
     inverter = st.slider("Battery inverter limit (kW)", 0.0, 20.0, 5.0, 0.5)
     initial = st.slider("Initial battery charge (%)", 10, 100, 50)
