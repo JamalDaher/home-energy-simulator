@@ -298,6 +298,24 @@ else:
     else:
         st.success("All modeled demand served throughout the outage.")
     integrated_df = pd.DataFrame(integrated.rows).set_index("hour")
+    if generator_only:
+        st.subheader("Generator-only runtime & operating cost")
+        generator_hours = int((integrated_df["generator_kwh"] > 0).sum())
+        modeled_hours = len(integrated_df)
+        g1, g2, g3, g4 = st.columns(4)
+        g1.metric("Generator running hours", f"{generator_hours} of {modeled_hours} h")
+        g2.metric("Fuel used", f"{integrated.generator_fuel_used:.2f} {integrated.generator_fuel_unit}")
+        g3.metric("Fuel cost", f"${integrated.generator_fuel_cost:,.2f}")
+        g4.metric("Fuel remaining", "Unlimited" if integrated.generator_fuel_remaining is None
+                  else f"{integrated.generator_fuel_remaining:.2f} {integrated.generator_fuel_unit}")
+        if use_finite_fuel:
+            st.caption("Running hours are modeled hourly intervals with generator output, not continuous runtime. "
+                       "Fuel inventory may limit operation; see unmet demand and the hourly chart below.")
+        else:
+            st.caption("Fuel supply is assumed unlimited. Enter a finite fuel inventory above to estimate "
+                       "runtime constraints for the selected household loads.")
+        st.caption("Fuel use and costs follow the generator fuel model settings above, "
+                   "including rated output, idle/full-load rates, and fuel price.")
     st.line_chart(integrated_df[["generator_kwh", "generator_fuel_used", "unmet_kwh"]])
     st.download_button("Download integrated outage CSV", integrated_df.to_csv().encode("utf-8"),
                        "integrated_outage.csv", "text/csv")
