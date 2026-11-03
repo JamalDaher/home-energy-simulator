@@ -282,8 +282,10 @@ with fc3:
     use_finite_fuel = st.checkbox("Limit by available fuel inventory", value=fuel_kind != "natural_gas")
     inventory = st.number_input(f"Available fuel ({fuel_unit})", min_value=0.0, value=20.0, step=1.0,
                                 disabled=not use_finite_fuel)
-fuel_model = FuelModel(fuel_kind, rated_fuel_kw, idle_rate * fuel_to_internal,\n                       full_rate * fuel_to_internal, fuel_price / fuel_to_internal)
-fuel_result = fuel_model.estimate(load_fuel_kw, operation_hours,\n                                  inventory * fuel_to_internal if use_finite_fuel else None)
+fuel_model = FuelModel(fuel_kind, rated_fuel_kw, idle_rate * fuel_to_internal,
+                       full_rate * fuel_to_internal, fuel_price / fuel_to_internal)
+fuel_result = fuel_model.estimate(load_fuel_kw, operation_hours,
+                                  inventory * fuel_to_internal if use_finite_fuel else None)
 fm1, fm2, fm3, fm4 = st.columns(4)
 fm1.metric("Estimated fuel rate", f"{fuel_result['fuel_rate_per_hour'] / fuel_to_internal:.2f} {fuel_unit}/h")
 fm2.metric("Fuel needed", f"{fuel_result['fuel_needed'] / fuel_to_internal:.1f} {fuel_unit}")
