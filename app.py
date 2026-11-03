@@ -232,7 +232,42 @@ df = pd.DataFrame(rows).set_index("hour")
 served_kwh = max(0.0, summary["demand_kwh"] - summary["unmet_kwh"])
 served_pct = 100 * served_kwh / summary["demand_kwh"] if summary["demand_kwh"] > 0 else 100.0
 st.progress(min(1.0, max(0.0, served_pct / 100)), text=f"Demand served: {served_pct:.1f}%")
-dispatch_tab, battery_tab, detail_tab = st.tabs(["Energy dispatch", "Battery state", "Hourly data"])
+flow_tab, dispatch_tab, battery_tab, detail_tab = st.tabs(
+    ["Power flow", "Energy dispatch", "Battery state", "Hourly data"]
+)
+with flow_tab:
+    st.caption("24-hour energy contributions. Battery discharge and solar generation are shown separately; "
+               "not all generated energy necessarily serves household loads.")
+    flow_sources = [
+        ("Solar generated", float(df["solar_kwh"].sum())),
+        ("Battery delivered", float(df["battery_delivered_kwh"].sum())),
+        ("Generator supplied", float(df["generator_kwh"].sum())),
+        ("Grid supplied", float(df["grid_kwh"].sum())),
+    ]
+    flow_total = sum(value for _, value in flow_sources)
+    flow_cols = st.columns(4)
+    for column, (label, value) in zip(flow_cols, flow_sources):
+        with column:
+            st.metric(label, f"{value:.1f} kWh")
+    st.markdown("**Supply contributions (relative share)**")
+    if flow_total > 0:
+        for label, value in flow_sources:
+            st.caption(f"{label}: {value:.1f} kWh ({value / flow_total:.0%} of reported supply)")
+            st.progress(min(1.0, value / flow_total))
+    else:
+        st.info("No energy supply was recorded for this scenario.")
+    left, middle, right = st.columns([2, 1, 2], vertical_alignment="center")
+    with left:
+        st.markdown("**Available energy sources**")
+        st.caption("Solar · Battery · Generator · Grid")
+    with middle:
+        st.markdown("### →")
+    with right:
+        st.markdown("**Household demand**")
+        st.metric("Served energy", f"{served_kwh:.1f} kWh")
+        st.metric("Unserved energy", f"{summary['unmet_kwh']:.1f} kWh")
+    st.caption("This is an energy summary, not an electrical wiring diagram or an instantaneous "
+               "power-flow calculation. Supply totals may include charging and conversion effects.")
 with dispatch_tab:
     st.caption("Hourly supply contributions, demand, and unmet load.")
     st.line_chart(df[["demand_kwh", "solar_kwh", "battery_delivered_kwh",
