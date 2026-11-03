@@ -19,7 +19,7 @@ st.markdown(
             padding-top: 0.75rem;
         }
     }
-    /* Floating back-to-top shortcut; revealed by scrolling the main page. */
+    /* Keep the back-to-top shortcut visible across Streamlit/browser versions. */
     .back-to-top {
         position: fixed;
         right: 1.5rem;
@@ -36,19 +36,13 @@ st.markdown(
         text-decoration: none !important;
         font-size: 1.5rem;
         box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
-        opacity: 0;
-        pointer-events: none;
-        animation: reveal-back-to-top linear both;
-        animation-timeline: scroll(nearest block);
-        animation-range: 0px 240px;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
     }
     .back-to-top:hover, .back-to-top:focus-visible {
         background: #365779;
         color: white !important;
-    }
-    @keyframes reveal-back-to-top {
-        0%, 60% { opacity: 0; visibility: hidden; }
-        100% { opacity: 1; visibility: visible; }
     }
     @media (max-width: 768px) {
         .back-to-top { right: 0.8rem; bottom: 0.8rem; }
