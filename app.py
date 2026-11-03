@@ -295,6 +295,43 @@ with st.expander("Critical-Load Circuit Planner (v1.2)", expanded=False):
                 st.success("Selected loads fit within the configured generator power estimate.")
         else:
             st.info("Enable a generator in the sidebar to compare against its rated power.")
+        st.markdown("#### Sequential circuit startup")
+        st.caption("Starts one selected circuit at a time, with previously started circuits "
+                   "continuing at their running wattage. Compare two startup orders.")
+        order_choice = st.radio(
+            "Startup order", ["Highest startup watts first", "Worksheet order"],
+            horizontal=True, key="critical_startup_order",
+        )
+        sequence = selected.copy()
+        if order_choice == "Highest startup watts first":
+            sequence = sequence.sort_values("Startup W", ascending=False, kind="stable")
+        sequence_rows = []
+        already_running = 0.0
+        for _, circuit in sequence.iterrows():
+            surge_peak = already_running + float(circuit["Startup W"])
+            already_running += float(circuit["Running W"])
+            sequence_rows.append({
+                "Circuit": str(circuit["Circuit"]),
+                "Startup peak (W)": round(surge_peak),
+                "Running total after start (W)": round(already_running),
+                "Within generator rating": bool(generator_active and surge_peak <= gen_kw * 1000),
+            })
+        if sequence_rows:
+            peak_w = max(row["Startup peak (W)"] for row in sequence_rows)
+            st.metric("Peak sequential startup demand", f"{peak_w / 1000:.2f} kW")
+            st.dataframe(pd.DataFrame(sequence_rows), hide_index=True, use_container_width=True)
+            if generator_active and peak_w > gen_kw * 1000:
+                st.warning("At least one startup step exceeds the configured generator rating.")
+            elif generator_active:
+                st.success("Every modeled sequential startup step fits the configured generator rating.")
+            st.download_button("Download startup sequence CSV",
+                               pd.DataFrame(sequence_rows).to_csv(index=False).encode("utf-8"),
+                               "critical_load_startup_sequence.csv", "text/csv")
+        else:
+            st.info("Mark at least one circuit as essential to create a startup sequence.")
+        st.caption("This simplified model assumes no overlapping starts, instantaneous steady-state "
+                   "running loads, and a generator rating available for startup. Verify real surge "
+                   "duration, power factor, derating, load shedding, and transfer equipment with a qualified electrician.")
         st.caption("Assumes one additional motor starts while other selected loads run. "
                    "Real startup overlap, power factor, fuel derating and transfer equipment require verification.")
     st.download_button("Download circuit worksheet CSV", circuit_rows.to_csv(index=False).encode("utf-8"),
