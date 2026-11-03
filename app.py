@@ -19,41 +19,45 @@ st.markdown(
             padding-top: 0.75rem;
         }
     }
-    /* Keep the back-to-top shortcut visible across Streamlit/browser versions. */
-    .back-to-top {
-        position: fixed;
-        right: 1.5rem;
-        bottom: 1.5rem;
-        z-index: 999;
-        width: 2.75rem;
-        height: 2.75rem;
-        border-radius: 50%;
-        background: #263b54;
-        color: white !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none !important;
-        font-size: 1.5rem;
-        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-    }
-    .back-to-top:hover, .back-to-top:focus-visible {
-        background: #365779;
-        color: white !important;
-    }
-    @media (max-width: 768px) {
-        .back-to-top { right: 0.8rem; bottom: 0.8rem; }
-    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 st.markdown('<span id="simulator-top"></span>', unsafe_allow_html=True)
 st.title("Home Energy Simulator · v1.0")
-st.markdown('<a class="back-to-top" href="#simulator-top" title="Back to top" aria-label="Back to top">↑</a>', unsafe_allow_html=True)
+# Render the fixed shortcut with st.html rather than Markdown, whose HTML
+# sanitization/rendering can prevent positioned links from appearing.
+st.html("""
+<style>
+  .sim-back-to-top {
+    position: fixed !important;
+    right: 24px !important;
+    bottom: 24px !important;
+    z-index: 2147483000 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: #263b54;
+    color: #fff !important;
+    font-size: 26px;
+    font-weight: 700;
+    text-decoration: none !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,.3);
+  }
+  .sim-back-to-top:hover, .sim-back-to-top:focus-visible {
+    background: #365779;
+    outline: 2px solid #fff;
+  }
+  @media (max-width: 768px) {
+    .sim-back-to-top { right: 12px !important; bottom: 12px !important; }
+  }
+</style>
+<a class="sim-back-to-top" href="#simulator-top"
+   title="Back to top" aria-label="Back to top">↑</a>
+""")
 st.caption("Solar · Battery · Generator · Outage resilience · Cost comparison | Educational engineering model")
 st.markdown(
     "**Jump to section:** "
