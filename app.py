@@ -176,9 +176,29 @@ oc1, oc2, oc3 = st.columns(3)
 with oc1:
     outage_days = st.slider("Outage duration (days)", 1, 14, 3)
 with oc2:
-    hourly_fuel = st.number_input("Generator fuel use (liters/hour running)", min_value=0.1, value=2.0, step=0.1)
+    outage_fuel_kind = st.selectbox(
+        "Outage generator fuel type", ["gasoline", "propane", "natural_gas"],
+        format_func=lambda x: {"gasoline": "Gasoline", "propane": "Propane", "natural_gas": "Natural gas"}[x],
+    )
+    outage_unit = "liters" if outage_fuel_kind == "natural_gas" else "gallons"
+    outage_rate_display = st.number_input(
+        f"Generator fuel use ({outage_unit}/hour running)",
+        min_value=0.1, value=60.0 if outage_fuel_kind == "natural_gas" else 0.5,
+        step=1.0 if outage_fuel_kind == "natural_gas" else 0.1,
+        key=f"outage_rate_{outage_fuel_kind}",
+    )
 with oc3:
-    fuel_available = st.number_input("Generator fuel available (liters)", min_value=0.0, value=40.0, step=5.0)
+    outage_available_display = st.number_input(
+        f"Generator fuel available ({outage_unit})",
+        min_value=0.0, value=1200.0 if outage_fuel_kind == "natural_gas" else 10.0,
+        step=10.0 if outage_fuel_kind == "natural_gas" else 1.0,
+        key=f"outage_inventory_{outage_fuel_kind}",
+    )
+# The legacy fixed-rate outage engine accepts quantities named 'liters'.
+# Convert liquid US gallons to liters; gaseous liters remain volume-based model units.
+outage_to_internal = 3.785411784 if outage_fuel_kind != "natural_gas" else 1.0
+hourly_fuel = outage_rate_display * outage_to_internal
+fuel_available = outage_available_display * outage_to_internal
 outage = simulate_outage(
     SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
                  initial_soc=initial / 100, generator_enabled=gen_enabled,
@@ -191,7 +211,7 @@ o1, o2, o3, o4 = st.columns(4)
 o1.metric("Hours fully supplied", f"{outage.hours_fully_served}/{outage.hours_simulated}")
 o2.metric("Demand served", f"{outage.fraction_demand_served:.1%}")
 o3.metric("Generator operating hours", f"{outage.generator_hours}")
-o4.metric("Fuel consumed", f"{outage.generator_fuel_liters:.1f} L")
+o4.metric("Fuel consumed", f"{outage.generator_fuel_liters / outage_to_internal:.1f} {outage_unit}")
 if outage.first_unserved_hour is None:
     st.success("All modeled load supplied for the selected outage duration.")
 else:
@@ -247,31 +267,32 @@ fc1, fc2, fc3 = st.columns(3)
 with fc1:
     fuel_kind = st.selectbox("Generator fuel type", ["gasoline", "propane", "natural_gas"],
                              format_func=lambda x: {"gasoline": "Gasoline", "propane": "Propane", "natural_gas": "Natural gas"}[x])
-    fuel_unit = "cubic feet" if fuel_kind == "natural_gas" else "gallons"
+    fuel_unit = "liters" if fuel_kind == "natural_gas" else "gallons"
+    fuel_to_internal = 1.0 / 28.316846592 if fuel_kind == "natural_gas" else 1.0
     rated_fuel_kw = st.number_input("Generator continuous rating (kW)", min_value=0.1, value=10.0, step=0.5)
     load_fuel_kw = st.number_input("Steady electrical output (kW)", min_value=0.0,
                                   max_value=float(rated_fuel_kw), value=min(5.0, float(rated_fuel_kw)), step=0.5)
 with fc2:
-    idle_rate = st.number_input(f"Idle fuel rate ({fuel_unit}/hour)", min_value=0.0, value=0.5 if fuel_kind != "natural_gas" else 30.0, step=0.1)
+    idle_rate = st.number_input(f"Idle fuel rate ({fuel_unit}/hour)", min_value=0.0, value=0.5 if fuel_kind != "natural_gas" else 850.0, step=0.1)
     full_rate = st.number_input(f"Full-load fuel rate ({fuel_unit}/hour)", min_value=float(idle_rate),
-                                value=max(float(idle_rate), 2.0 if fuel_kind != "natural_gas" else 130.0), step=0.1)
-    fuel_price = st.number_input(f"Fuel price ($/{fuel_unit})", min_value=0.0, value=3.0 if fuel_kind != "natural_gas" else 0.02, step=0.01)
+                                value=max(float(idle_rate), 2.0 if fuel_kind != "natural_gas" else 3680.0), step=0.1)
+    fuel_price = st.number_input(f"Fuel price ($/{fuel_unit})", min_value=0.0, value=3.0 if fuel_kind != "natural_gas" else 0.0007, step=0.0001)
 with fc3:
     operation_hours = st.number_input("Planned operating hours", min_value=0.0, value=72.0, step=1.0)
     use_finite_fuel = st.checkbox("Limit by available fuel inventory", value=fuel_kind != "natural_gas")
     inventory = st.number_input(f"Available fuel ({fuel_unit})", min_value=0.0, value=20.0, step=1.0,
                                 disabled=not use_finite_fuel)
-fuel_model = FuelModel(fuel_kind, rated_fuel_kw, idle_rate, full_rate, fuel_price)
-fuel_result = fuel_model.estimate(load_fuel_kw, operation_hours, inventory if use_finite_fuel else None)
+fuel_model = FuelModel(fuel_kind, rated_fuel_kw, idle_rate * fuel_to_internal,\n                       full_rate * fuel_to_internal, fuel_price / fuel_to_internal)
+fuel_result = fuel_model.estimate(load_fuel_kw, operation_hours,\n                                  inventory * fuel_to_internal if use_finite_fuel else None)
 fm1, fm2, fm3, fm4 = st.columns(4)
-fm1.metric("Estimated fuel rate", f"{fuel_result['fuel_rate_per_hour']:.2f} {fuel_unit}/h")
-fm2.metric("Fuel needed", f"{fuel_result['fuel_needed']:.1f} {fuel_unit}")
+fm1.metric("Estimated fuel rate", f"{fuel_result['fuel_rate_per_hour'] / fuel_to_internal:.2f} {fuel_unit}/h")
+fm2.metric("Fuel needed", f"{fuel_result['fuel_needed'] / fuel_to_internal:.1f} {fuel_unit}")
 fm3.metric("Fuel cost (full duration)", f"${fuel_result['fuel_cost']:,.2f}")
 fm4.metric("Estimated runtime with inventory",
            "Not limited" if fuel_result["available_runtime_hours"] is None else f"{fuel_result['available_runtime_hours']:.1f} hours")
 if use_finite_fuel and fuel_result["supplied_hours"] < operation_hours:
     st.warning(f"Inventory covers approximately {fuel_result['supplied_hours']:.1f} of {operation_hours:.1f} planned hours.")
-st.info("Linear idle-to-full-load consumption is an illustrative assumption. Use manufacturer-measured fuel rates where possible. The separate outage simulator still uses a fixed liters/hour model.")
+st.info("Linear idle-to-full-load consumption is illustrative. Use manufacturer-measured fuel rates. Natural gas is entered as gaseous liters at consistent reference conditions; internal calculations use cubic feet. The separate outage simulator uses a fixed hourly fuel-rate model.")
 
 
 st.divider()
@@ -282,16 +303,16 @@ integrated = simulate_outage(
                  initial_soc=initial / 100, generator_enabled=gen_enabled,
                  generator_kw=gen_kw, grid_available=False),
     loads, sun, days=outage_days, fuel_model=fuel_model,
-    fuel_available=inventory if use_finite_fuel else None,
+    fuel_available=inventory * fuel_to_internal if use_finite_fuel else None,
 ) if not gen_enabled or gen_kw <= rated_fuel_kw else None
 if integrated is None:
     st.error("Set the fuel model's continuous generator rating at least as high as the generator power in the sidebar.")
 else:
     im1, im2, im3, im4 = st.columns(4)
     im1.metric("Demand served", f"{integrated.fraction_demand_served:.1%}")
-    im2.metric("Fuel consumed", f"{integrated.generator_fuel_used:.2f} {integrated.generator_fuel_unit}")
+    im2.metric("Fuel consumed", f"{integrated.generator_fuel_used / fuel_to_internal:.2f} {fuel_unit}")
     im3.metric("Fuel remaining", "Unlimited" if integrated.generator_fuel_remaining is None else
-               f"{integrated.generator_fuel_remaining:.2f} {integrated.generator_fuel_unit}")
+               f"{integrated.generator_fuel_remaining / fuel_to_internal:.2f} {fuel_unit}")
     im4.metric("Generator fuel cost", f"${integrated.generator_fuel_cost:,.2f}")
     if integrated.first_unserved_hour is not None:
         st.warning(f"First unmet demand in hour {integrated.first_unserved_hour + 1}.")
