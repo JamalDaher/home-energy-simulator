@@ -14,6 +14,14 @@ st.markdown(
     /* Tighten Streamlit's default empty area above the dashboard. */
     div[data-testid="stMetric"] {background:rgba(105,132,160,.09);border:1px solid rgba(105,132,160,.2);border-radius:14px;padding:16px}
     div[data-testid="stMetric"] label {font-weight:650}
+    .stAppViewContainer .block-container {max-width:1500px}
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {gap:.7rem}
+    [data-testid="stDataFrame"] {max-width:100%;overflow-x:auto}
+    @media(max-width:768px) {
+      div[data-testid="stMetric"] {padding:10px;border-radius:10px}
+      div[data-testid="stMetric"] [data-testid="stMetricValue"] {font-size:1.35rem}
+      .stAppViewContainer .block-container {padding-left:.85rem;padding-right:.85rem}
+    }
     .sim-section-anchor {display:block;height:1px;scroll-margin-top:72px}
     /* Keep anchored accordion titles below Streamlit's top toolbar. */
     [data-testid="stExpander"] {scroll-margin-top:72px}
@@ -44,7 +52,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.html('<span id="simulator-top" aria-hidden="true"></span>')
-st.title("Home Energy Simulator · v1.1")
+st.title("Home Energy Simulator · v1.2")
 # Render the fixed shortcut with st.html rather than Markdown, whose HTML
 # sanitization/rendering can prevent positioned links from appearing.
 back_to_top_html = """
@@ -114,13 +122,14 @@ else:
 st.caption("Solar · Battery · Generator · Outage resilience · Cost comparison | Educational engineering model")
 st.html("""
 <style>
-.sim-nav {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 22px}
+.sim-nav {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 18px}
 .sim-nav a {display:block;text-decoration:none!important;border:1px solid rgba(116,144,172,.3);
-  background:rgba(116,144,172,.08);border-radius:12px;padding:13px 12px;color:inherit!important;
+  background:rgba(116,144,172,.08);border-radius:10px;padding:11px 10px;color:inherit!important;
   font-size:.92rem;font-weight:600;line-height:1.3;transition:background .15s,border-color .15s}
 .sim-nav a:hover,.sim-nav a:focus-visible {background:rgba(116,144,172,.19);border-color:rgba(116,144,172,.65)}
 .sim-nav a small {display:block;font-size:.72rem;opacity:.65;margin-top:4px;font-weight:400}
-@media(max-width:800px){.sim-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1050px){.sim-nav{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){.sim-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:440px){.sim-nav{grid-template-columns:1fr 1fr;gap:7px}.sim-nav a{padding:10px;font-size:.82rem}}
 </style>
 <nav aria-label="Simulator sections" class="sim-nav">
