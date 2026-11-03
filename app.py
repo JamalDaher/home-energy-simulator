@@ -190,6 +190,22 @@ if generator_only:
 config = SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
                       initial_soc=initial/100, generator_enabled=gen_enabled,
                       generator_kw=gen_kw, grid_available=grid)
+st.markdown("### System at a glance")
+st.caption("Active configuration · Adjust equipment and operating mode in the sidebar.")
+mode_label = "Generator only" if generator_only else (
+    "Grid + backup" if grid else "Off-grid / outage"
+)
+overview_a, overview_b, overview_c, overview_d = st.columns(4)
+overview_a.metric("Operating mode", mode_label)
+overview_b.metric("Solar array", f"{solar:.1f} kW")
+overview_c.metric("Battery storage", f"{battery:.1f} kWh")
+overview_d.metric("Generator", f"{gen_kw:.1f} kW" if gen_enabled else "Disabled")
+if generator_only:
+    st.caption("Generator-only mode bypasses solar and battery contributions.")
+elif not grid and not gen_enabled and battery <= 0 and solar <= 0:
+    st.warning("No power sources are enabled. Household demand will be unserved.")
+st.divider()
+
 st.header("Household Load Designer", anchor="loads")
 st.caption("Edit appliance running watts, schedules and duty cycles to model hourly average demand.")
 if "appliances" not in st.session_state:
