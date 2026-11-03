@@ -124,6 +124,7 @@ st.html("""
 @media(max-width:440px){.sim-nav{grid-template-columns:1fr 1fr;gap:7px}.sim-nav a{padding:10px;font-size:.82rem}}
 </style>
 <nav aria-label="Simulator sections" class="sim-nav">
+<a href="#critical-loads">🛡️ Critical circuits<small>Backup load priorities</small></a>
 <a href="#loads">⚡ Household loads<small>Appliances & daily demand</small></a>
 <a href="#battery-bank">🔋 Battery bank<small>Storage & runtime</small></a>
 <a href="#outage">🏠 Outage simulator<small>Whole-home resilience</small></a>
@@ -248,6 +249,57 @@ padding:14px;display:flex;flex-direction:column;gap:5px;min-width:0;background:r
 <span>Hourly appliance demand</span></div>
 </div>
 """)
+st.html('<span id="critical-loads" class="sim-section-anchor"></span>')
+with st.expander("Critical-Load Circuit Planner (v1.2)", expanded=False):
+    st.caption("Estimate which circuits can operate together during a grid outage. "
+               "This planning worksheet does not change the 24-hour simulation.")
+    if "critical_circuits" not in st.session_state:
+        st.session_state.critical_circuits = [
+            {"Circuit": "Refrigerator", "Running W": 150, "Startup W": 900, "Essential": True},
+            {"Circuit": "Freezer", "Running W": 120, "Startup W": 720, "Essential": True},
+            {"Circuit": "Lighting", "Running W": 200, "Startup W": 200, "Essential": True},
+            {"Circuit": "Internet / electronics", "Running W": 100, "Startup W": 100, "Essential": True},
+            {"Circuit": "Central AC / heat pump", "Running W": 3500, "Startup W": 9000, "Essential": False},
+            {"Circuit": "Water heater", "Running W": 4500, "Startup W": 4500, "Essential": False},
+        ]
+    circuit_rows = st.data_editor(
+        pd.DataFrame(st.session_state.critical_circuits), num_rows="dynamic",
+        hide_index=True, use_container_width=True, key="critical_circuit_editor",
+        column_config={
+            "Circuit": st.column_config.TextColumn("Circuit / appliance", required=True),
+            "Running W": st.column_config.NumberColumn("Running W", min_value=0, required=True),
+            "Startup W": st.column_config.NumberColumn("Startup W", min_value=0, required=True),
+            "Essential": st.column_config.CheckboxColumn("Essential"),
+        },
+    )
+    if circuit_rows.isna().any().any():
+        st.warning("Complete every circuit field to calculate a valid backup estimate.")
+    elif (circuit_rows["Startup W"] < circuit_rows["Running W"]).any():
+        st.warning("Startup watts should not be lower than running watts.")
+    else:
+        selected = circuit_rows.loc[circuit_rows["Essential"].astype(bool)]
+        running_w = float(selected["Running W"].sum())
+        # Conservative single-largest-start assumption, not simultaneous motor starts.
+        largest_surge = float((selected["Startup W"] - selected["Running W"]).max()) if len(selected) else 0.0
+        startup_w = running_w + largest_surge
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Essential running load", f"{running_w / 1000:.2f} kW")
+        c2.metric("Estimated startup requirement", f"{startup_w / 1000:.2f} kW")
+        c3.metric("Selected circuits", len(selected))
+        available_kw = gen_kw if generator_active else 0.0
+        if generator_active:
+            if startup_w / 1000 > available_kw:
+                st.warning(f"Estimated startup requirement exceeds the configured {available_kw:.1f} kW generator. "
+                           "Consider load sequencing or a larger appropriately rated unit.")
+            else:
+                st.success("Selected loads fit within the configured generator power estimate.")
+        else:
+            st.info("Enable a generator in the sidebar to compare against its rated power.")
+        st.caption("Assumes one additional motor starts while other selected loads run. "
+                   "Real startup overlap, power factor, fuel derating and transfer equipment require verification.")
+    st.download_button("Download circuit worksheet CSV", circuit_rows.to_csv(index=False).encode("utf-8"),
+                       "critical_load_circuits.csv", "text/csv")
+
 st.header("Household Load Designer", anchor="loads")
 st.caption("Edit appliance running watts, schedules and duty cycles to model hourly average demand.")
 if "appliances" not in st.session_state:
