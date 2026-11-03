@@ -12,6 +12,8 @@ st.markdown(
     """
     <style>
     /* Tighten Streamlit's default empty area above the dashboard. */
+    div[data-testid="stMetric"] {background:rgba(105,132,160,.09);border:1px solid rgba(105,132,160,.2);border-radius:14px;padding:16px}
+    div[data-testid="stMetric"] label {font-weight:650}
     .stAppViewContainer .block-container {
         padding-top: 1.25rem;
         position: relative;
@@ -37,7 +39,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.html('<span id="simulator-top" aria-hidden="true"></span>')
-st.title("Home Energy Simulator · v1.0")
+st.title("Home Energy Simulator · v1.1")
 # Render the fixed shortcut with st.html rather than Markdown, whose HTML
 # sanitization/rendering can prevent positioned links from appearing.
 back_to_top_html = """
@@ -219,17 +221,27 @@ sun = solar_factors(SolarConfig(latitude_deg=latitude, longitude_deg=longitude,
                                cloud_factor=clouds), day) if use_solar and not generator_only else demo_sun
 rows = simulate(config, loads, sun)
 summary = totals(rows)
-a,b,c,d = st.columns(4)
+st.markdown("### Daily energy overview")
+st.caption("Summary of the selected 24-hour scenario. Energy values are kWh.")
+a, b, c, d = st.columns(4)
 a.metric("Demand", f"{summary['demand_kwh']:.1f} kWh")
 b.metric("Solar generated", f"{summary['solar_kwh']:.1f} kWh")
 c.metric("Generator", f"{summary['generator_kwh']:.1f} kWh")
 d.metric("Unserved", f"{summary['unmet_kwh']:.1f} kWh")
 df = pd.DataFrame(rows).set_index("hour")
-st.subheader("Hourly energy dispatch")
-st.line_chart(df[["demand_kwh","solar_kwh","battery_delivered_kwh",
-                  "generator_kwh","grid_kwh","unmet_kwh"]])
-st.subheader("Battery state of charge")
-st.line_chart(df[["soc"]])
+served_kwh = max(0.0, summary["demand_kwh"] - summary["unmet_kwh"])
+served_pct = 100 * served_kwh / summary["demand_kwh"] if summary["demand_kwh"] > 0 else 100.0
+st.progress(min(1.0, max(0.0, served_pct / 100)), text=f"Demand served: {served_pct:.1f}%")
+dispatch_tab, battery_tab, detail_tab = st.tabs(["Energy dispatch", "Battery state", "Hourly data"])
+with dispatch_tab:
+    st.caption("Hourly supply contributions, demand, and unmet load.")
+    st.line_chart(df[["demand_kwh", "solar_kwh", "battery_delivered_kwh",
+                      "generator_kwh", "grid_kwh", "unmet_kwh"]])
+with battery_tab:
+    st.caption("Battery state of charge through the simulation.")
+    st.line_chart(df[["soc"]])
+with detail_tab:
+    st.dataframe(df, use_container_width=True)
 st.download_button("Download simulation CSV", df.to_csv().encode("utf-8"),
                    "energy_simulation.csv", "text/csv")
 st.info("Load is synthetic. Solar model is approximate clear-sky geometry, not measured weather. Longitude is recorded but hours use local solar time; no time-zone or equation-of-time correction. No surge loads, temperature, fuel or shading modeled.")
