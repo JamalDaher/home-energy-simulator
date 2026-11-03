@@ -12,6 +12,11 @@ st.caption("Solar · Battery · Generator · Outage resilience · Cost compariso
 
 with st.sidebar:
     st.header("System configuration")
+    grid = st.checkbox("Grid available", value=False)
+    gen_enabled = st.checkbox("Generator enabled", value=False)
+    gen_kw = st.slider("Generator power (kW)", 0.0, 20.0, 5.0, 0.5,
+                       disabled=not gen_enabled)
+    st.divider()
     solar = st.slider("Solar array (kW)", 0.0, 20.0, 4.8, 0.2)
     use_solar = st.checkbox("Use location and seasonal solar model", value=True)
     latitude = st.number_input("Latitude (degrees)", -90.0, 90.0, 34.27, 0.1)
@@ -23,10 +28,6 @@ with st.sidebar:
     battery = st.slider("Battery capacity (kWh)", 0.0, 60.0, 14.0, 0.5)
     inverter = st.slider("Battery inverter limit (kW)", 0.0, 20.0, 5.0, 0.5)
     initial = st.slider("Initial battery charge (%)", 10, 100, 50)
-    grid = st.checkbox("Grid available", value=False)
-    gen_enabled = st.checkbox("Generator enabled", value=False)
-    gen_kw = st.slider("Generator power (kW)", 0.0, 20.0, 5.0, 0.5,
-                       disabled=not gen_enabled)
 
 config = SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
                       initial_soc=initial/100, generator_enabled=gen_enabled,
