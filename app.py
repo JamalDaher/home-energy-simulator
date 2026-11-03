@@ -153,6 +153,8 @@ with st.sidebar:
                                  help="Run on generator power without grid, solar, or battery contribution.")
     grid = st.checkbox("Grid available", value=False, disabled=generator_only)
     gen_enabled = st.checkbox("Generator enabled", value=False, disabled=generator_only)
+    st.markdown("#### Generator setup")
+    st.caption("1. Select generator and fuel. 2. Verify continuous rating. 3. Enter fuel supply and consumption.")
     # Fuel-specific ratings are entered by the user; no manufacturer data is assumed.
     if "generator_power_setting" not in st.session_state:
         st.session_state.generator_power_setting = 5.0
@@ -180,6 +182,10 @@ with st.sidebar:
         if (gen_enabled or generator_only) and not gen_kw:
             st.warning("Enter a verified continuous rating for the selected fuel.")
     st.caption(f"{profile_name} · {selected_fuel} · {gen_kw:.1f} kW running")
+    if gen_kw <= 0:
+        st.caption("Enter a positive running rating to model generator output.")
+    elif not gen_enabled and not generator_only:
+        st.caption("Generator is off in the main simulation; comparisons can still enable it.")
     with st.expander("Fuel use & runtime estimate", expanded=False):
         st.caption("Optional planning inputs, not verified manufacturer consumption curves.")
         fuel_units = "gal" if selected_fuel in ("Gasoline", "Diesel") else (
@@ -193,10 +199,13 @@ with st.sidebar:
             value=0.0, step=0.01, key=f"profile_price_{profile_name}_{selected_fuel}")
         if fuel_rate > 0:
             st.metric("Estimated runtime", f"{fuel_available / fuel_rate:.1f} hours")
+            if profile_fuel_price > 0:
+                st.metric("Fuel inventory value", f"${fuel_available * profile_fuel_price:,.2f}")
             st.caption("Constant consumption assumed. Actual fuel rate varies with load, "
                        "temperature, engine condition and fuel supply.")
         else:
             st.info("Enter a positive consumption rate to estimate runtime.")
+        st.caption("For multi-day outage modeling, enable profile linking in the fuel calculator.")
     st.divider()
     solar = st.slider("Solar array (kW)", 0.0, 20.0, 4.8, 0.2, disabled=generator_only)
     use_solar = st.checkbox("Use location and seasonal solar model", value=True, disabled=generator_only)
