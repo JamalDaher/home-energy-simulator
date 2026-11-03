@@ -682,6 +682,32 @@ with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
                            "runtime constraints for the selected household loads.")
             st.caption("Fuel use and costs follow the generator fuel model settings above, "
                        "including rated output, idle/full-load rates, and fuel price.")
+        st.markdown("#### Outage power availability timeline")
+        st.caption("Hourly model output; generator fuel exhaustion is inferred from modeled fuel "
+                   "availability, not an independently measured shutdown time.")
+        timeline = integrated_df.copy()
+        timeline["Generator supplying power"] = timeline["generator_kwh"] > 0
+        timeline["Demand unmet"] = timeline["unmet_kwh"] > 0
+        if "battery_kwh" in timeline.columns:
+            timeline["Battery supplying power"] = timeline["battery_kwh"] > 0
+        if "solar_kwh" in timeline.columns:
+            timeline["Solar supplying power"] = timeline["solar_kwh"] > 0
+        st.dataframe(timeline[[c for c in [
+            "Generator supplying power", "Battery supplying power",
+            "Solar supplying power", "Demand unmet", "generator_fuel_used",
+            "unmet_kwh"] if c in timeline.columns]],
+            use_container_width=True)
+        if use_finite_fuel and integrated.generator_fuel_remaining is not None:
+            if integrated.generator_fuel_remaining <= 0:
+                st.warning("The modeled fuel inventory is depleted by the end of the outage.")
+            else:
+                st.caption("Fuel remains at the end of the modeled outage.")
+        if profile_name != "Manual / custom":
+            st.caption(f"Generator profile: {profile_name} ({selected_fuel}), "
+                       f"configured continuous rating {gen_kw:.1f} kW. "
+                       "The outage fuel curve and inventory are controlled by the "
+                       "Generator Fuel & Runtime Calculator above; they are not "
+                       "automatically copied from the profile runtime worksheet.")
         st.line_chart(integrated_df[["generator_kwh", "generator_fuel_used", "unmet_kwh"]])
         st.download_button("Download integrated outage CSV", integrated_df.to_csv().encode("utf-8"),
                            "integrated_outage.csv", "text/csv")
