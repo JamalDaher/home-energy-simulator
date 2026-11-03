@@ -9,6 +9,14 @@ from home_energy_simulator.loads import Appliance, default_appliances, hourly_lo
 st.set_page_config(page_title="Home Energy Simulator", layout="wide")
 st.title("Home Energy Simulator · v1.0")
 st.caption("Solar · Battery · Generator · Outage resilience · Cost comparison | Educational engineering model")
+st.markdown(
+    "**Jump to section:** "
+    "[Household Loads](#loads) · [Battery Bank](#battery-bank) · "
+    "[Outage Simulator](#outage) · [HVAC Sizing](#hvac) · "
+    "[Generator Fuel](#generator-fuel) · [Fuel-Aware Outage](#fuel-aware-outage) · "
+    "[Optimization](#optimization) · [Scenario Workspace](#workspace)"
+)
+
 
 with st.sidebar:
     st.header("System configuration")
@@ -32,7 +40,7 @@ with st.sidebar:
 config = SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
                       initial_soc=initial/100, generator_enabled=gen_enabled,
                       generator_kw=gen_kw, grid_available=grid)
-st.header("Household Load Designer")
+st.header("Household Load Designer", anchor="loads")
 st.caption("Edit appliance running watts, schedules and duty cycles to model hourly average demand.")
 if "appliances" not in st.session_state:
     st.session_state.appliances = [
@@ -100,7 +108,7 @@ st.info("Load is synthetic. Solar model is approximate clear-sky geometry, not m
 
 
 st.divider()
-st.header('LiFePO4 Battery Bank Designer')
+st.header('LiFePO4 Battery Bank Designer', anchor="battery-bank")
 st.caption('Nominal educational estimates only; verify manufacturer series/parallel approval and electrical protections.')
 from home_energy_simulator.battery import BatteryBank
 bc1,bc2,bc3 = st.columns(3)
@@ -129,7 +137,7 @@ except ValueError as exc:
 
 
 st.divider()
-st.header("Whole-Home Outage Simulator")
+st.header("Whole-Home Outage Simulator", anchor="outage")
 st.caption("Repeat a synthetic 24-hour household load and the selected solar profile over multiple outage days. The grid is always off.")
 from home_energy_simulator.outage import simulate_outage
 oc1, oc2, oc3 = st.columns(3)
@@ -164,7 +172,7 @@ st.info("Illustrative hourly averages only. Fuel burn is fixed per running hour;
 
 
 st.divider()
-st.header("HVAC & Generator Sizing (v0.6)")
+st.header("HVAC & Generator Sizing (v0.6)", anchor="hvac")
 st.caption("Nominal running and startup capacity screening. Enter equipment-specific ratings before drawing conclusions.")
 from home_energy_simulator.hvac import HVACLoad, SourceRating, evaluate_hvac
 hc1, hc2, hc3 = st.columns(3)
@@ -200,7 +208,7 @@ st.warning("Within ratings does NOT guarantee a compressor will start. Motor sta
 
 
 st.divider()
-st.header("Generator Fuel & Runtime Calculator (v0.7)")
+st.header("Generator Fuel & Runtime Calculator (v0.7)", anchor="generator-fuel")
 st.caption("Independent steady-load planning estimate; not yet connected to outage dispatch.")
 from home_energy_simulator.fuel import FuelModel
 fc1, fc2, fc3 = st.columns(3)
@@ -235,7 +243,7 @@ st.info("Linear idle-to-full-load consumption is an illustrative assumption. Use
 
 
 st.divider()
-st.header("Integrated Fuel-Aware Outage (v0.8)")
+st.header("Integrated Fuel-Aware Outage (v0.8)", anchor="fuel-aware-outage")
 st.caption("Uses the household load, solar, battery and generator settings above, with load-dependent fuel consumption from the v0.7 fuel model.")
 integrated = simulate_outage(
     SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
@@ -265,7 +273,7 @@ else:
 
 
 st.divider()
-st.header("System Optimization (v0.9)")
+st.header("System Optimization (v0.9)", anchor="optimization")
 st.caption("Compare discrete solar, battery and generator sizes for one repeated-day outage scenario.")
 from home_energy_simulator.optimization import UnitCosts, optimize_system
 opt1, opt2, opt3 = st.columns(3)
@@ -327,7 +335,7 @@ st.info("This is a discrete comparison for a single illustrative outage, not lif
 
 
 st.divider()
-st.header("Scenario Workspace & PDF Reports (v1.0)")
+st.header("Scenario Workspace & PDF Reports (v1.0)", anchor="workspace")
 st.caption("Save a snapshot as JSON, reload it for independent analysis, and export a PDF report. Files remain on your device; nothing is saved to a server.")
 from home_energy_simulator.scenarios import Scenario, scenario_to_json, scenario_from_json
 from home_energy_simulator.reports import outage_pdf
