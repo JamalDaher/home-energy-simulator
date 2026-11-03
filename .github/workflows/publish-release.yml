@@ -3,6 +3,11 @@ name: Publish verified release
 on:
   workflow_dispatch:
     inputs:
+      confirm_live_app_verified:
+        description: "Confirm live-app checks and exports were verified"
+        required: true
+        default: false
+        type: boolean
       version:
         description: "Release version (e.g. v1.2.0)"
         required: true
@@ -15,6 +20,7 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && inputs.confirm_live_app_verified
     steps:
       - name: Validate release version
         env:
@@ -40,12 +46,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
         run: |
-          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null; then
             echo "Tag $VERSION already exists; refusing to overwrite"
             exit 1
           fi
           gh release create "$VERSION" \
             --target "$GITHUB_SHA" \
             --title "Home Energy Simulator $VERSION" \
-            --notes-file docs/v1.2-release-candidate.md \
-            --verify-tag=false
+            --notes-file docs/v1.2-release-candidate.md
