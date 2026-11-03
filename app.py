@@ -147,6 +147,49 @@ st.html("""
 """)
 
 
+# Navigation targets are rendered immediately before their Streamlit expanders.
+# On Streamlit builds that support st.html JavaScript, open the corresponding
+# native <details> element before scrolling to its section.
+nav_expansion_script = """
+<script>
+(() => {
+  const ids = new Set([
+    'critical-loads', 'battery-bank', 'outage', 'hvac',
+    'generator-fuel', 'fuel-aware-outage', 'backup-comparison',
+    'optimization', 'workspace'
+  ]);
+  function openSection(id) {
+    if (!ids.has(id)) return;
+    const anchor = document.getElementById(id);
+    if (!anchor) return;
+    const blocks = [...document.querySelectorAll('[data-testid="stExpander"]')];
+    // Find the first expander AFTER the target anchor, not a nested expander.
+    const target = blocks.find(block =>
+      anchor.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    const details = target?.querySelector('details');
+    if (details && !details.open) details.open = true;
+    requestAnimationFrame(() => anchor.scrollIntoView({block:'start', behavior:'smooth'}));
+  }
+  document.addEventListener('click', event => {
+    const link = event.target.closest?.('.sim-nav a[href^="#"]');
+    if (!link) return;
+    const id = decodeURIComponent(link.hash.slice(1));
+    if (!ids.has(id)) return;
+    event.preventDefault();
+    history.replaceState(null, '', '#' + id);
+    openSection(id);
+  });
+  if (ids.has(location.hash.slice(1))) {
+    requestAnimationFrame(() => openSection(location.hash.slice(1)));
+  }
+})();
+</script>
+"""
+if "unsafe_allow_javascript" in inspect.signature(st.html).parameters:
+    st.html(nav_expansion_script, unsafe_allow_javascript=True)
+
+
 with st.sidebar:
     st.header("System configuration")
     generator_only = st.checkbox("Generator-only mode", value=False,
