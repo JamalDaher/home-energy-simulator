@@ -179,6 +179,8 @@ with st.sidebar:
         fuel_rate = st.number_input(f"Estimated consumption at chosen load ({fuel_units}/hour)",
                                      min_value=0.0, value=0.0, step=0.1,
                                      key=f"fuel_rate_{profile_name}_{selected_fuel}")
+        profile_fuel_price = st.number_input(f"Fuel price ($/{fuel_units})", min_value=0.0,
+            value=0.0, step=0.01, key=f"profile_price_{profile_name}_{selected_fuel}")
         if fuel_rate > 0:
             st.metric("Estimated runtime", f"{fuel_available / fuel_rate:.1f} hours")
             st.caption("Constant consumption assumed. Actual fuel rate varies with load, "
@@ -689,21 +691,22 @@ with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
     outage_fuel_conversion = fuel_to_internal
     if link_profile_fuel and not profile_fuel_error:
         outage_fuel_model = FuelModel(profile_kind, max(gen_kw, 0.1),
-                                      profile_rate_internal, profile_rate_internal, 0.0)
+                                      profile_rate_internal, profile_rate_internal,
+                                      profile_fuel_price * (propane_lb_per_gal if selected_fuel == "Propane" else 1.0))
         outage_fuel_inventory = profile_inventory_internal
         outage_fuel_unit = fuel_units
         outage_fuel_conversion = (profile_inventory_internal / fuel_available
                                   if fuel_available > 0 else
                                   (1.0 / propane_lb_per_gal if selected_fuel == "Propane" else 1.0))
     elif link_profile_fuel:
-        st.warning("Profile fuel inputs are invalid; showing the standard fuel-model scenario.")
+        st.error("Invalid linked profile; outage results will be withheld.")
     integrated = simulate_outage(
         SystemConfig(solar_kw=solar, battery_kwh=battery, inverter_kw=inverter,
                      initial_soc=initial / 100, generator_enabled=gen_enabled,
                      generator_kw=gen_kw, grid_available=False),
         loads, sun, days=outage_days, fuel_model=outage_fuel_model,
         fuel_available=outage_fuel_inventory,
-    ) if not gen_enabled or gen_kw <= (gen_kw if link_profile_fuel and not profile_fuel_error else rated_fuel_kw) else None
+    ) if (not (link_profile_fuel and profile_fuel_error) and (not gen_enabled or gen_kw <= (gen_kw if link_profile_fuel else rated_fuel_kw))) else None
     if integrated is None:
         st.error("Set the fuel model's continuous generator rating at least as high as the generator power in the sidebar.")
     else:
