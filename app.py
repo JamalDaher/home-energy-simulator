@@ -32,7 +32,7 @@ st.html("""
   .sim-back-to-top {
     position: fixed !important;
     right: 24px !important;
-    bottom: 24px !important;
+    bottom: 104px !important;
     z-index: 2147483000 !important;
     display: flex !important;
     align-items: center;
@@ -52,7 +52,7 @@ st.html("""
     outline: 2px solid #fff;
   }
   @media (max-width: 768px) {
-    .sim-back-to-top { right: 12px !important; bottom: 12px !important; }
+    .sim-back-to-top { right: 12px !important; bottom: 96px !important; }
   }
 </style>
 <a class="sim-back-to-top" href="#simulator-top"
