@@ -919,6 +919,25 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
                      hide_index=True, use_container_width=True)
         st.bar_chart(st.session_state["backup_comparison_results"].set_index(
             "Configuration")[["Demand served (%)"]])
+        st.markdown("#### Decision summary")
+        summary_df = st.session_state["backup_comparison_results"]
+        if generator_cost <= 0 or (battery > 0 and battery_cost <= 0) or (solar > 0 and solar_cost <= 0):
+            st.warning("One or more equipment costs are zero or unspecified; ownership cost rankings may be misleading.")
+        if battery <= 0:
+            st.info("Battery capacity is zero; battery-only cannot supply power.")
+        if solar <= 0:
+            st.info("Solar capacity is zero; hybrid has no solar generation.")
+        st.caption("Comparison scenarios enable the configured generator independently of the main dashboard toggle.")
+        best_coverage = summary_df.loc[summary_df["Demand served (%)"].idxmax()]
+        st.write("Highest modeled demand coverage:", best_coverage["Configuration"],
+                 "—", str(best_coverage["Demand served (%)"]) + "%")
+        if (generator_cost > 0 and (battery <= 0 or battery_cost > 0)
+                and (solar <= 0 or solar_cost > 0)):
+            cheapest = summary_df.loc[summary_df["10-year ownership ($)"].idxmin()]
+            st.write("Lowest estimated 10-year ownership cost:", cheapest["Configuration"],
+                     "— $", round(cheapest["10-year ownership ($)"], 2))
+        st.caption("Rankings are based on modeled assumptions; ties use worksheet order. "
+                   "Cost and demand coverage measure different outcomes.")
         st.markdown("#### Long-term ownership projections")
         st.dataframe(st.session_state["backup_comparison_results"][[
             "Configuration", "Annual operating cost ($)", "5-year ownership ($)",
