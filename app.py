@@ -19,11 +19,47 @@ st.markdown(
             padding-top: 0.75rem;
         }
     }
+    /* Floating back-to-top shortcut; revealed by scrolling the main page. */
+    .back-to-top {
+        position: fixed;
+        right: 1.5rem;
+        bottom: 1.5rem;
+        z-index: 999;
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 50%;
+        background: #263b54;
+        color: white !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none !important;
+        font-size: 1.5rem;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+        opacity: 0;
+        pointer-events: none;
+        animation: reveal-back-to-top linear both;
+        animation-timeline: scroll(nearest block);
+        animation-range: 0px 240px;
+    }
+    .back-to-top:hover, .back-to-top:focus-visible {
+        background: #365779;
+        color: white !important;
+    }
+    @keyframes reveal-back-to-top {
+        0%, 60% { opacity: 0; visibility: hidden; }
+        100% { opacity: 1; visibility: visible; }
+    }
+    @media (max-width: 768px) {
+        .back-to-top { right: 0.8rem; bottom: 0.8rem; }
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
+st.markdown('<span id="simulator-top"></span>', unsafe_allow_html=True)
 st.title("Home Energy Simulator · v1.0")
+st.markdown('<a class="back-to-top" href="#simulator-top" title="Back to top" aria-label="Back to top">↑</a>', unsafe_allow_html=True)
 st.caption("Solar · Battery · Generator · Outage resilience · Cost comparison | Educational engineering model")
 st.markdown(
     "**Jump to section:** "
