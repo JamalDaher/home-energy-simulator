@@ -829,6 +829,19 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
     st.caption("Enter incremental costs for each component. Defaults of $0 mean costs have not "
                "been provided, not that equipment is free. Fuel costs use the selected outage "
                "fuel model; maintenance, replacement, financing, taxes and grid savings are excluded.")
+    st.markdown("#### Long-term ownership assumptions")
+    lc1, lc2, lc3 = st.columns(3)
+    with lc1:
+        outages_per_year = st.number_input("Similar outages per year", min_value=0.0,
+            value=1.0, step=0.5, key="comparison_outages_per_year")
+    with lc2:
+        generator_maintenance = st.number_input("Generator annual maintenance ($)",
+            min_value=0.0, value=0.0, step=25.0, key="comparison_generator_maintenance")
+    with lc3:
+        solar_battery_maintenance = st.number_input("Solar and battery annual maintenance ($)",
+            min_value=0.0, value=0.0, step=25.0, key="comparison_solar_battery_maintenance")
+    st.caption("Projections repeat the modeled outage and fuel price. Excludes replacement, "
+               "inflation, financing, discounting, taxes, incentives and grid savings.")
     comparison_enabled = st.button("Compare backup configurations", key="run_backup_comparison")
     if comparison_enabled:
         if link_profile_fuel and profile_fuel_error:
@@ -865,6 +878,10 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
                     f"Fuel used ({outage_fuel_unit})": round(
                         result.generator_fuel_used / outage_fuel_conversion, 2),
                     "Fuel cost ($)": round(result.generator_fuel_cost, 2),
+                    "Annual operating cost ($)": round(
+                        result.generator_fuel_cost * outages_per_year
+                        + (generator_maintenance if cmp_generator else 0.0)
+                        + (solar_battery_maintenance if cmp_battery > 0 or cmp_solar > 0 else 0.0), 2),
                     "Equipment + installation ($)": round(
                         (generator_cost if cmp_generator else 0.0)
                         + (battery_cost if cmp_battery > 0 else 0.0)
@@ -878,12 +895,38 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
                     if cmp_battery > 0 else None,
                 })
             comparison_df = pd.DataFrame(comparison_results)
+            for years in (5, 10, 20):
+                comparison_df[f"{years}-year ownership ($)"] = (
+                    comparison_df["Equipment + installation ($)"]
+                    + years * comparison_df["Annual operating cost ($)"]
+                ).round(2)
             st.session_state["backup_comparison_results"] = comparison_df
+    # Session state can retain older comparison tables after a Streamlit deployment.
+    required_comparison_columns = {
+        "Configuration", "Demand served (%)", "Fuel cost ($)",
+        "Equipment + installation ($)", "Annual operating cost ($)",
+        "5-year ownership ($)", "10-year ownership ($)", "20-year ownership ($)",
+    }
+    cached_comparison = st.session_state.get("backup_comparison_results")
+    if cached_comparison is not None and not required_comparison_columns.issubset(
+        set(cached_comparison.columns)
+    ):
+        del st.session_state["backup_comparison_results"]
+        st.info("Previous comparison results use an older format. Click Compare backup "
+                "configurations to recalculate with the latest cost assumptions.")
     if "backup_comparison_results" in st.session_state:
         st.dataframe(st.session_state["backup_comparison_results"],
                      hide_index=True, use_container_width=True)
         st.bar_chart(st.session_state["backup_comparison_results"].set_index(
             "Configuration")[["Demand served (%)"]])
+        st.markdown("#### Long-term ownership projections")
+        st.dataframe(st.session_state["backup_comparison_results"][[
+            "Configuration", "Annual operating cost ($)", "5-year ownership ($)",
+            "10-year ownership ($)", "20-year ownership ($)"
+        ]], hide_index=True, use_container_width=True)
+        st.bar_chart(st.session_state["backup_comparison_results"].set_index(
+            "Configuration")[["5-year ownership ($)", "10-year ownership ($)",
+                                "20-year ownership ($)"]])
         st.markdown("#### Cost comparison")
         st.bar_chart(st.session_state["backup_comparison_results"].set_index(
             "Configuration")[["Equipment + installation ($)", "Fuel cost ($)"]])
