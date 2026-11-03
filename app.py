@@ -15,11 +15,12 @@ st.markdown(
         padding-top: 1.25rem;
         position: relative;
     }
-    /* Anchor to the actual top edge of the main content container,
-       rather than the first Markdown block below Streamlit's padding. */
+    /* Target a point above the scrollable document so browser anchor
+       navigation clamps to scroll position zero, even with Streamlit's
+       internal content padding and sticky header offsets. */
     #simulator-top {
         position: absolute;
-        top: 0;
+        top: -10000px;
         left: 0;
         width: 1px;
         height: 1px;
