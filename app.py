@@ -206,6 +206,48 @@ elif not grid and not gen_enabled and battery <= 0 and solar <= 0:
     st.warning("No power sources are enabled. Household demand will be unserved.")
 st.divider()
 
+# A schematic of configured sources, not measured real-time power flow.
+st.markdown("### System connection overview")
+st.caption("Conceptual power paths for the current configuration; this is not a wiring plan.")
+solar_active = solar > 0 and not generator_only
+battery_active = battery > 0 and inverter > 0 and not generator_only
+generator_active = gen_enabled and gen_kw > 0
+grid_active = grid and not generator_only
+def source_card(label, detail, active):
+    state = "active" if active else "inactive"
+    status = "Enabled" if active else "Off"
+    return (f'<div class="sim-flow-source {state}"><strong>{label}</strong>'
+            f'<span>{detail}</span><small>{status}</small></div>')
+flow_sources_html = "".join([
+    source_card("☀️ Solar", f"{solar:.1f} kW", solar_active),
+    source_card("🔋 Battery", f"{battery:.1f} kWh · {inverter:.1f} kW inverter", battery_active),
+    source_card("⛽ Generator", f"{gen_kw:.1f} kW", generator_active),
+    source_card("🔌 Grid", "Utility connection", grid_active),
+])
+st.html("""
+<style>
+.sim-flow-grid{display:grid;grid-template-columns:minmax(0,2fr) 40px minmax(0,1fr);
+gap:12px;align-items:center;margin:12px 0 24px}
+.sim-flow-sources{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sim-flow-source,.sim-flow-home{border:1px solid rgba(116,144,172,.35);border-radius:13px;
+padding:14px;display:flex;flex-direction:column;gap:5px;min-width:0;background:rgba(116,144,172,.08)}
+.sim-flow-source strong,.sim-flow-home strong{font-size:.96rem}
+.sim-flow-source span,.sim-flow-home span{font-size:.8rem;opacity:.8;overflow-wrap:anywhere}
+.sim-flow-source small{font-size:.73rem;font-weight:650}
+.sim-flow-source.inactive{opacity:.43}
+.sim-flow-source.active{border-color:rgba(60,160,120,.7);background:rgba(60,160,120,.09)}
+.sim-flow-arrow{text-align:center;font-size:1.7rem;opacity:.7}
+.sim-flow-home{min-height:115px;justify-content:center;align-items:center;text-align:center}
+@media(max-width:650px){.sim-flow-grid{grid-template-columns:1fr;gap:6px}
+.sim-flow-arrow{transform:rotate(90deg)}.sim-flow-source{padding:10px}}
+</style>
+<div class="sim-flow-grid">
+<div class="sim-flow-sources">""" + flow_sources_html + """</div>
+<div class="sim-flow-arrow" aria-hidden="true">➜</div>
+<div class="sim-flow-home"><strong>🏠 Household loads</strong>
+<span>Hourly appliance demand</span></div>
+</div>
+""")
 st.header("Household Load Designer", anchor="loads")
 st.caption("Edit appliance running watts, schedules and duty cycles to model hourly average demand.")
 if "appliances" not in st.session_state:
