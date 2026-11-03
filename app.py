@@ -131,6 +131,7 @@ st.html("""
 <a href="#hvac">❄️ HVAC sizing<small>Startup & generator loads</small></a>
 <a href="#generator-fuel">⛽ Generator fuel<small>Consumption & cost</small></a>
 <a href="#fuel-aware-outage">🕒 Fuel-aware outage<small>Multi-day backup</small></a>
+<a href="#backup-comparison">⚖️ Compare systems<small>Generator, battery & hybrid</small></a>
 <a href="#optimization">📈 Optimization<small>Compare configurations</small></a>
 <a href="#workspace">📁 Workspace<small>Scenarios & reports</small></a>
 </nav>
@@ -804,6 +805,64 @@ with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
                            "integrated_outage.csv", "text/csv")
         st.info("Fuel is burned only during modeled generator output. An hour is skipped if insufficient fuel remains for the entire hour; partial-hour generation, starting surges and actual fuel curves are not modeled.")
 
+
+st.html('<span id="backup-comparison" class="sim-section-anchor"></span>')
+with st.expander("Backup System Comparison (v1.2)", expanded=False):
+    st.caption("Compare three configurations against the same household loads and outage duration. "
+               "Grid power is disabled for every scenario. This is a modeled comparison, not equipment sizing approval.")
+    st.caption("Generator-only: generator, no solar or battery. Battery-only: battery, no solar or generator. "
+               "Hybrid: generator, solar and battery using the sidebar capacities.")
+    comparison_enabled = st.button("Compare backup configurations", key="run_backup_comparison")
+    if comparison_enabled:
+        if link_profile_fuel and profile_fuel_error:
+            st.error("Correct the linked generator fuel settings before comparing systems.")
+        elif gen_kw > 0 and not link_profile_fuel and gen_kw > rated_fuel_kw:
+            st.error("The fuel-model continuous rating must cover the selected generator capacity.")
+        else:
+            comparison_specs = [
+                ("Generator only", 0.0, 0.0, 0.0, True),
+                ("Battery only", 0.0, battery, inverter, False),
+                ("Hybrid solar + battery + generator", solar, battery, inverter, True),
+            ]
+            comparison_results = []
+            for label, cmp_solar, cmp_battery, cmp_inverter, cmp_generator in comparison_specs:
+                result = simulate_outage(
+                    SystemConfig(
+                        solar_kw=cmp_solar, battery_kwh=cmp_battery,
+                        inverter_kw=cmp_inverter,
+                        initial_soc=initial / 100 if cmp_battery > 0 else 0.0,
+                        generator_enabled=cmp_generator and gen_kw > 0,
+                        generator_kw=gen_kw, grid_available=False,
+                    ),
+                    loads, sun, days=outage_days,
+                    fuel_model=outage_fuel_model,
+                    fuel_available=outage_fuel_inventory,
+                )
+                comparison_results.append({
+                    "Configuration": label,
+                    "Demand served (%)": round(result.fraction_demand_served * 100, 1),
+                    "First unmet hour": ("None" if result.first_unserved_hour is None
+                                         else str(result.first_unserved_hour + 1)),
+                    "Generator hours": result.generator_hours,
+                    f"Fuel used ({outage_fuel_unit})": round(
+                        result.generator_fuel_used / outage_fuel_conversion, 2),
+                    "Fuel cost ($)": round(result.generator_fuel_cost, 2),
+                    "Final battery charge (%)": round(result.final_soc * 100, 1)
+                    if cmp_battery > 0 else None,
+                })
+            comparison_df = pd.DataFrame(comparison_results)
+            st.session_state["backup_comparison_results"] = comparison_df
+    if "backup_comparison_results" in st.session_state:
+        st.dataframe(st.session_state["backup_comparison_results"],
+                     hide_index=True, use_container_width=True)
+        st.bar_chart(st.session_state["backup_comparison_results"].set_index(
+            "Configuration")[["Demand served (%)"]])
+        st.download_button("Download comparison CSV",
+                           st.session_state["backup_comparison_results"].to_csv(index=False).encode("utf-8"),
+                           "backup_system_comparison.csv", "text/csv")
+        st.caption("Results are snapshots from the last comparison run. Rerun after changing settings. "
+                   "The outage engine skips generator operation when fuel cannot cover a full hour; "
+                   "starting surges and transfer-switch constraints are not modeled.")
 
 st.html('<span id="optimization" class="sim-section-anchor"></span>')
 with st.expander("System Optimization (v0.9)", expanded=False):
