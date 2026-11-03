@@ -13,6 +13,17 @@ st.markdown(
     /* Tighten Streamlit's default empty area above the dashboard. */
     .stAppViewContainer .block-container {
         padding-top: 1.25rem;
+        position: relative;
+    }
+    /* Anchor to the actual top edge of the main content container,
+       rather than the first Markdown block below Streamlit's padding. */
+    #simulator-top {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1px;
+        height: 1px;
+        scroll-margin-top: 0;
     }
     @media (max-width: 768px) {
         .stAppViewContainer .block-container {
@@ -23,7 +34,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-st.markdown('<span id="simulator-top"></span>', unsafe_allow_html=True)
+st.html('<span id="simulator-top" aria-hidden="true"></span>')
 st.title("Home Energy Simulator · v1.0")
 # Render the fixed shortcut with st.html rather than Markdown, whose HTML
 # sanitization/rendering can prevent positioned links from appearing.
