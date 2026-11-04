@@ -372,6 +372,21 @@ with st.sidebar:
             if abs(nominal_bank_kwh - battery) > 0.5:
                 st.info("To model this calculated bank, manually adjust Battery capacity (kWh) above.")
             st.caption("Nominal capacity is not usable AC energy; losses, reserve limits and battery ratings matter.")
+            reserve_pct = st.slider(
+                "Minimum battery reserve (%)", 0, 50, 20, 5,
+                help="Planning assumption: the portion of nominal energy kept in reserve."
+            )
+            ac_efficiency_pct = st.slider(
+                "Estimated battery-to-AC efficiency (%)", 50, 100, 90, 5,
+                help="Planning assumption for conversion and discharge losses, not a verified equipment specification."
+            )
+            usable_ac_kwh = nominal_bank_kwh * (1 - reserve_pct / 100) * (ac_efficiency_pct / 100)
+            st.metric("Estimated usable AC energy", f"{usable_ac_kwh:.2f} kWh")
+            st.caption(
+                "Illustrative estimate = nominal kWh × (1 − reserve fraction) × AC efficiency. "
+                "Actual usable energy depends on equipment limits, temperature, battery health and loads. "
+                "These assumptions do not change the simulation."
+            )
 
 # Keep all simulation tools available; only reduce the number of shortcuts.
 # This CSS is injected after sidebar widgets so changing the toggle reruns it.
