@@ -612,6 +612,13 @@ else:
         f"About {summary['unmet_kwh']:.1f} kWh is not supplied over 24 hours. "
         "Try reducing loads or increasing available generation or storage."
     )
+    shortfall_hours = df.index[df["unmet_kwh"] > 1e-6].tolist()
+    if shortfall_hours:
+        hour_labels = ", ".join(f"{int(hour):02d}:00" for hour in shortfall_hours)
+        st.caption(
+            f"**When supply falls short:** {len(shortfall_hours)} of 24 modeled hours "
+            f"({hour_labels}). Hours use the simulation's 24-hour clock."
+        )
     with st.expander("How can I reduce the energy shortfall?", expanded=False):
         st.markdown(
             "- **Reduce demand:** Open [Household energy use](#loads) and lower optional appliance usage.\n"
