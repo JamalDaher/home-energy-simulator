@@ -1122,7 +1122,7 @@ with st.expander("Compare backup systems", expanded=False):
             ]], hide_index=True, use_container_width=True)
             st.bar_chart(summary_df.set_index("Configuration")[["10-year ownership ($)"]])
             with st.container(border=True):
-    st.markdown("**Upfront equipment and outage fuel costs**")
+                st.markdown("**Upfront equipment and outage fuel costs**")
                 st.dataframe(summary_df[[
                     "Configuration", "Equipment + installation ($)",
                     "Fuel cost ($)", "Modeled outage cost ($)"
