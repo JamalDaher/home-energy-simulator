@@ -443,6 +443,23 @@ with st.sidebar:
                 daily_energy_kwh = (
                     daytime_load_kw * daytime_hours + nighttime_load_kw * nighttime_hours
                 )
+                st.caption(
+                    f"**24-hour backup demand:** {daily_energy_kwh:.2f} kWh "
+                    f"({daytime_load_kw * daytime_hours:.2f} kWh daytime + "
+                    f"{nighttime_load_kw * nighttime_hours:.2f} kWh nighttime). "
+                    f"**Battery energy available above reserve:** {available_ac_kwh:.2f} kWh."
+                )
+                if available_ac_kwh >= daily_energy_kwh:
+                    st.success(
+                        f"Battery energy covers one complete modeled day, with "
+                        f"{available_ac_kwh - daily_energy_kwh:.2f} kWh remaining above reserve."
+                    )
+                else:
+                    st.info(
+                        f"One complete modeled day needs "
+                        f"{daily_energy_kwh - available_ac_kwh:.2f} kWh more than the "
+                        "estimated available battery energy."
+                    )
                 full_cycles = int(available_ac_kwh // daily_energy_kwh)
                 remaining_kwh = max(0.0, available_ac_kwh - full_cycles * daily_energy_kwh)
                 # Use the selected outage start period; both orders have the same
