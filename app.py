@@ -234,58 +234,60 @@ with st.sidebar:
     gen_enabled = st.checkbox("Generator enabled", value=False, disabled=generator_only)
     st.divider()
     st.subheader("2 · Generator")
-    st.caption("Choose a model and fuel, then enter its running power.")
-    # Fuel-specific ratings are entered by the user; no manufacturer data is assumed.
-    if "generator_power_setting" not in st.session_state:
-        st.session_state.generator_power_setting = 5.0
-    if "generator_fuel_ratings" not in st.session_state:
-        st.session_state.generator_fuel_ratings = {}
-    profile_name = st.selectbox("Generator profile",
-        ["Manual / custom", "FIRMAN T07571", "FIRMAN W03386"])
-    fuels = (["Gasoline", "Propane", "Natural gas"] if profile_name == "FIRMAN T07571"
-             else ["Gasoline"] if profile_name == "FIRMAN W03386"
-             else ["Gasoline", "Propane", "Natural gas", "Diesel"])
-    selected_fuel = st.selectbox("Generator fuel", fuels, key="generator_selected_fuel")
-    if profile_name == "Manual / custom":
-        gen_kw = st.slider("Generator power (kW)", 0.0, 20.0,
-                           st.session_state.generator_power_setting, 0.5)
-        st.session_state.generator_power_setting = gen_kw
-    else:
-        profile_key = f"{profile_name}:{selected_fuel}"
-        rated_kw = st.number_input("Verified continuous running rating (kW)",
-            min_value=0.0, max_value=20.0,
-            value=float(st.session_state.generator_fuel_ratings.get(profile_key, 0.0)),
-            step=0.1, key=f"gen_rating_{profile_key}",
-            help="Use the nameplate/manual continuous rating for this fuel, not peak surge power.")
-        st.session_state.generator_fuel_ratings[profile_key] = rated_kw
-        gen_kw = rated_kw
-        if (gen_enabled or generator_only) and not gen_kw:
-            st.warning("Enter a verified continuous rating for the selected fuel.")
-    st.caption(f"{profile_name} · {selected_fuel} · {gen_kw:.1f} kW running")
-    if gen_kw <= 0:
-        st.caption("Enter a positive running rating to model generator output.")
-    elif not gen_enabled and not generator_only:
-        st.caption("Generator is off in the main simulation; comparisons can still enable it.")
-    with st.expander("Fuel use & runtime estimate", expanded=False):
-        st.caption("Optional planning inputs, not verified manufacturer consumption curves.")
-        fuel_units = "gal" if selected_fuel in ("Gasoline", "Diesel") else (
-            "lb" if selected_fuel == "Propane" else "ft³")
-        fuel_available = st.number_input(f"Available fuel ({fuel_units})", min_value=0.0,
-                                          value=0.0, step=1.0, key=f"fuel_amount_{selected_fuel}")
-        fuel_rate = st.number_input(f"Estimated consumption at chosen load ({fuel_units}/hour)",
-                                     min_value=0.0, value=0.0, step=0.1,
-                                     key=f"fuel_rate_{profile_name}_{selected_fuel}")
-        profile_fuel_price = st.number_input(f"Fuel price ($/{fuel_units})", min_value=0.0,
-            value=0.0, step=0.01, key=f"profile_price_{profile_name}_{selected_fuel}")
-        if fuel_rate > 0:
-            st.metric("Estimated runtime", f"{fuel_available / fuel_rate:.1f} hours")
-            if profile_fuel_price > 0:
-                st.metric("Fuel inventory value", f"${fuel_available * profile_fuel_price:,.2f}")
-            st.caption("Constant consumption assumed. Actual fuel rate varies with load, "
-                       "temperature, engine condition and fuel supply.")
+    with st.expander("Generator model, power & fuel", expanded=generator_only or gen_enabled):
+        st.caption("Select your generator, fuel and continuous running rating.")
+        st.caption("Choose a model and fuel, then enter its running power.")
+        # Fuel-specific ratings are entered by the user; no manufacturer data is assumed.
+        if "generator_power_setting" not in st.session_state:
+            st.session_state.generator_power_setting = 5.0
+        if "generator_fuel_ratings" not in st.session_state:
+            st.session_state.generator_fuel_ratings = {}
+        profile_name = st.selectbox("Generator profile",
+            ["Manual / custom", "FIRMAN T07571", "FIRMAN W03386"])
+        fuels = (["Gasoline", "Propane", "Natural gas"] if profile_name == "FIRMAN T07571"
+                 else ["Gasoline"] if profile_name == "FIRMAN W03386"
+                 else ["Gasoline", "Propane", "Natural gas", "Diesel"])
+        selected_fuel = st.selectbox("Generator fuel", fuels, key="generator_selected_fuel")
+        if profile_name == "Manual / custom":
+            gen_kw = st.slider("Generator power (kW)", 0.0, 20.0,
+                               st.session_state.generator_power_setting, 0.5)
+            st.session_state.generator_power_setting = gen_kw
         else:
-            st.info("Enter a positive consumption rate to estimate runtime.")
-        st.caption("For multi-day outage modeling, enable profile linking in the fuel calculator.")
+            profile_key = f"{profile_name}:{selected_fuel}"
+            rated_kw = st.number_input("Verified continuous running rating (kW)",
+                min_value=0.0, max_value=20.0,
+                value=float(st.session_state.generator_fuel_ratings.get(profile_key, 0.0)),
+                step=0.1, key=f"gen_rating_{profile_key}",
+                help="Use the nameplate/manual continuous rating for this fuel, not peak surge power.")
+            st.session_state.generator_fuel_ratings[profile_key] = rated_kw
+            gen_kw = rated_kw
+            if (gen_enabled or generator_only) and not gen_kw:
+                st.warning("Enter a verified continuous rating for the selected fuel.")
+        st.caption(f"{profile_name} · {selected_fuel} · {gen_kw:.1f} kW running")
+        if gen_kw <= 0:
+            st.caption("Enter a positive running rating to model generator output.")
+        elif not gen_enabled and not generator_only:
+            st.caption("Generator is off in the main simulation; comparisons can still enable it.")
+        with st.expander("Fuel use & runtime estimate", expanded=False):
+            st.caption("Optional planning inputs, not verified manufacturer consumption curves.")
+            fuel_units = "gal" if selected_fuel in ("Gasoline", "Diesel") else (
+                "lb" if selected_fuel == "Propane" else "ft³")
+            fuel_available = st.number_input(f"Available fuel ({fuel_units})", min_value=0.0,
+                                              value=0.0, step=1.0, key=f"fuel_amount_{selected_fuel}")
+            fuel_rate = st.number_input(f"Estimated consumption at chosen load ({fuel_units}/hour)",
+                                         min_value=0.0, value=0.0, step=0.1,
+                                         key=f"fuel_rate_{profile_name}_{selected_fuel}")
+            profile_fuel_price = st.number_input(f"Fuel price ($/{fuel_units})", min_value=0.0,
+                value=0.0, step=0.01, key=f"profile_price_{profile_name}_{selected_fuel}")
+            if fuel_rate > 0:
+                st.metric("Estimated runtime", f"{fuel_available / fuel_rate:.1f} hours")
+                if profile_fuel_price > 0:
+                    st.metric("Fuel inventory value", f"${fuel_available * profile_fuel_price:,.2f}")
+                st.caption("Constant consumption assumed. Actual fuel rate varies with load, "
+                           "temperature, engine condition and fuel supply.")
+            else:
+                st.info("Enter a positive consumption rate to estimate runtime.")
+            st.caption("For multi-day outage modeling, enable profile linking in the fuel calculator.")
     st.divider()
     st.subheader("3 · Solar panels")
     with st.expander("Solar array and location", expanded=False):
