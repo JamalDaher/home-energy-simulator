@@ -247,8 +247,7 @@ with st.sidebar:
     st.divider()
     st.subheader("2 · Generator")
     with st.expander("Generator model, power & fuel", expanded=generator_only or gen_enabled):
-        st.caption("Select your generator, fuel and continuous running rating.")
-        st.caption("Choose a model and fuel, then enter its running power.")
+        st.caption("Choose a model and fuel, then enter its continuous running rating.")
         # Fuel-specific ratings are entered by the user; no manufacturer data is assumed.
         if "generator_power_setting" not in st.session_state:
             st.session_state.generator_power_setting = 5.0
@@ -280,26 +279,26 @@ with st.sidebar:
             st.caption("Enter a positive running rating to model generator output.")
         elif not gen_enabled and not generator_only:
             st.caption("Generator is off in the main simulation; comparisons can still enable it.")
-        with st.expander("Fuel use & runtime estimate", expanded=False):
-            st.caption("Optional planning inputs, not verified manufacturer consumption curves.")
-            fuel_units = "gal" if selected_fuel in ("Gasoline", "Diesel") else (
-                "lb" if selected_fuel == "Propane" else "ft³")
-            fuel_available = st.number_input(f"Available fuel ({fuel_units})", min_value=0.0,
-                                              value=0.0, step=1.0, key=f"fuel_amount_{selected_fuel}")
-            fuel_rate = st.number_input(f"Estimated consumption at chosen load ({fuel_units}/hour)",
-                                         min_value=0.0, value=0.0, step=0.1,
-                                         key=f"fuel_rate_{profile_name}_{selected_fuel}")
-            profile_fuel_price = st.number_input(f"Fuel price ($/{fuel_units})", min_value=0.0,
-                value=0.0, step=0.01, key=f"profile_price_{profile_name}_{selected_fuel}")
-            if fuel_rate > 0:
-                st.metric("Estimated runtime", f"{fuel_available / fuel_rate:.1f} hours")
-                if profile_fuel_price > 0:
-                    st.metric("Fuel inventory value", f"${fuel_available * profile_fuel_price:,.2f}")
-                st.caption("Constant consumption assumed. Actual fuel rate varies with load, "
-                           "temperature, engine condition and fuel supply.")
-            else:
-                st.info("Enter a positive consumption rate to estimate runtime.")
-            st.caption("For multi-day outage modeling, enable profile linking in the fuel calculator.")
+    with st.expander("Fuel use & runtime estimate", expanded=False):
+        st.caption("Optional planning inputs, not verified manufacturer consumption curves.")
+        fuel_units = "gal" if selected_fuel in ("Gasoline", "Diesel") else (
+            "lb" if selected_fuel == "Propane" else "ft³")
+        fuel_available = st.number_input(f"Available fuel ({fuel_units})", min_value=0.0,
+                                          value=0.0, step=1.0, key=f"fuel_amount_{selected_fuel}")
+        fuel_rate = st.number_input(f"Estimated consumption at chosen load ({fuel_units}/hour)",
+                                     min_value=0.0, value=0.0, step=0.1,
+                                     key=f"fuel_rate_{profile_name}_{selected_fuel}")
+        profile_fuel_price = st.number_input(f"Fuel price ($/{fuel_units})", min_value=0.0,
+            value=0.0, step=0.01, key=f"profile_price_{profile_name}_{selected_fuel}")
+        if fuel_rate > 0:
+            st.metric("Estimated runtime", f"{fuel_available / fuel_rate:.1f} hours")
+            if profile_fuel_price > 0:
+                st.metric("Fuel inventory value", f"${fuel_available * profile_fuel_price:,.2f}")
+            st.caption("Constant consumption assumed. Actual fuel rate varies with load, "
+                       "temperature, engine condition and fuel supply.")
+        else:
+            st.info("Enter a positive consumption rate to estimate runtime.")
+        st.caption("For multi-day outage modeling, enable profile linking in the fuel calculator.")
     st.divider()
     st.subheader("3 · Solar panels")
     with st.expander("Solar array and location", expanded=False):
