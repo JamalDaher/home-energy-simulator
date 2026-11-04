@@ -555,7 +555,18 @@ d.metric("Unserved", f"{summary['unmet_kwh']:.1f} kWh")
 df = pd.DataFrame(rows).set_index("hour")
 served_kwh = max(0.0, summary["demand_kwh"] - summary["unmet_kwh"])
 served_pct = 100 * served_kwh / summary["demand_kwh"] if summary["demand_kwh"] > 0 else 100.0
-st.progress(min(1.0, max(0.0, served_pct / 100)), text=f"Demand served: {served_pct:.1f}%")
+if summary["demand_kwh"] <= 0:
+    st.info("No household demand is configured. Add appliances to see how your system performs.")
+elif summary["unmet_kwh"] <= 1e-6:
+    st.success("Your system covers all modeled household demand for this 24-hour scenario.")
+else:
+    st.warning(
+        f"Your system covers {served_pct:.1f}% of modeled demand. "
+        f"About {summary['unmet_kwh']:.1f} kWh is not supplied over 24 hours. "
+        "Try reducing loads or increasing available generation or storage."
+    )
+st.progress(min(1.0, max(0.0, served_pct / 100)), text=f"Household energy supplied: {served_pct:.1f}%")
+st.caption("These results describe one modeled day, not a guarantee of outage runtime or equipment compatibility.")
 flow_tab, dispatch_tab, battery_tab, detail_tab = st.tabs(
     ["Power flow", "Energy dispatch", "Battery state", "Hourly data"]
 )
