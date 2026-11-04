@@ -563,13 +563,17 @@ sun = solar_factors(SolarConfig(latitude_deg=latitude, longitude_deg=longitude,
                                cloud_factor=clouds), day) if use_solar and not generator_only else demo_sun
 rows = simulate(config, loads, sun)
 summary = totals(rows)
-st.markdown("### Daily energy overview")
-st.caption("Summary of the selected 24-hour scenario. Energy values are kWh.")
+st.markdown("### Your daily energy results")
+st.caption("Modeled energy over 24 hours. kWh measures energy used or produced, not instantaneous power.")
 a, b, c, d = st.columns(4)
-a.metric("Demand", f"{summary['demand_kwh']:.1f} kWh")
-b.metric("Solar generated", f"{summary['solar_kwh']:.1f} kWh")
-c.metric("Generator", f"{summary['generator_kwh']:.1f} kWh")
-d.metric("Unserved", f"{summary['unmet_kwh']:.1f} kWh")
+a.metric("Household demand", f"{summary['demand_kwh']:.1f} kWh",
+         help="Total energy your modeled appliances need over 24 hours.")
+b.metric("Solar production", f"{summary['solar_kwh']:.1f} kWh",
+         help="Total modeled solar generation; some may charge the battery rather than directly power loads.")
+c.metric("Generator production", f"{summary['generator_kwh']:.1f} kWh",
+         help="Total energy produced by the generator in this scenario.")
+d.metric("Energy shortfall", f"{summary['unmet_kwh']:.1f} kWh",
+         help="Household energy demand that the configured sources could not supply.")
 df = pd.DataFrame(rows).set_index("hour")
 served_kwh = max(0.0, summary["demand_kwh"] - summary["unmet_kwh"])
 served_pct = 100 * served_kwh / summary["demand_kwh"] if summary["demand_kwh"] > 0 else 100.0
