@@ -9,7 +9,7 @@ def test_getting_started_guide_has_real_markdown_line_breaks():
     guide = APP.split('with st.expander("New here? Follow this 3-step setup"', 1)[1]
     guide = guide.split("# Navigation targets", 1)[0]
     assert r"\\\\n" not in guide
-    assert r"\\n\\n" in guide
+    assert r"\n\n" in guide
     for step in ("1. **", "2. **", "3. **"):
         assert step in guide
 
