@@ -574,6 +574,21 @@ sun = solar_factors(SolarConfig(latitude_deg=latitude, longitude_deg=longitude,
 rows = simulate(config, loads, sun)
 summary = totals(rows)
 st.markdown("### Your daily energy results")
+# Keep the modeled equipment visible next to results, even when the sidebar is closed.
+if generator_only:
+    active_system = f"Generator-only · {gen_kw:.1f} kW running · {selected_fuel}"
+else:
+    active_sources = []
+    if grid:
+        active_sources.append("Grid")
+    if gen_enabled:
+        active_sources.append(f"Generator ({gen_kw:.1f} kW, {selected_fuel})")
+    if solar > 0:
+        active_sources.append(f"Solar ({solar:.1f} kW)")
+    if battery > 0 and inverter > 0:
+        active_sources.append(f"Battery ({battery:.1f} kWh, {inverter:.1f} kW inverter)")
+    active_system = " · ".join(active_sources) if active_sources else "No power sources configured"
+st.caption(f"**Modeled system:** {active_system}")
 st.caption("Modeled energy over 24 hours. kWh measures energy used or produced, not instantaneous power.")
 a, b, c, d = st.columns(4)
 a.metric("Household demand", f"{summary['demand_kwh']:.1f} kWh",
