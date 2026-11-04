@@ -155,6 +155,18 @@ st.html("""
 """)
 
 
+with st.expander("New here? Follow this 3-step setup", expanded=False):
+    st.markdown(
+        "1. **[Set your household loads](#loads):** Adjust appliances and daily use.\\n"
+        "2. **Choose your power sources:** In the left sidebar, enable the grid or generator "
+        "and configure solar panels or battery storage as needed.\\n"
+        "3. **Review your results:** Check the daily energy overview below, then "
+        "**[run an outage simulation](#outage)** or **[compare backup systems](#backup-comparison)**."
+    )
+    st.caption("Start with the default example if you are exploring. "
+               "The simulator is educational and does not replace equipment specifications or electrical design.")
+
+
 # Navigation targets are rendered immediately before their Streamlit expanders.
 # On Streamlit builds that support st.html JavaScript, open the corresponding
 # native <details> element before scrolling to its section.
