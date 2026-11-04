@@ -128,6 +128,7 @@ st.html("""
   font-size:.92rem;font-weight:600;line-height:1.3;transition:background .15s,border-color .15s}
 .sim-nav a:hover,.sim-nav a:focus-visible {background:rgba(116,144,172,.19);border-color:rgba(116,144,172,.65)}
 .sim-nav a[aria-current="location"] {background:rgba(116,144,172,.24);border-color:rgba(116,144,172,.85);box-shadow:inset 0 0 0 1px rgba(116,144,172,.45)}
+@media(prefers-reduced-motion:reduce){.sim-nav a{transition:none}}
 .sim-nav a small {display:block;font-size:.72rem;opacity:.65;margin-top:4px;font-weight:400}
 @media(max-width:1050px){.sim-nav{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){.sim-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -178,8 +179,9 @@ nav_expansion_script = """
     const details = target?.querySelector('details');
     if (details && !details.open) details.open = true;
     // Allow the expanded content to settle before positioning the section.
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     requestAnimationFrame(() => requestAnimationFrame(() =>
-      anchor.scrollIntoView({block:'start', behavior:'smooth'})
+      anchor.scrollIntoView({block:'start', behavior: reducedMotion ? 'instant' : 'smooth'})
     ));
   }
   document.addEventListener('click', event => {
