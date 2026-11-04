@@ -494,8 +494,9 @@ with st.expander("Essential circuits", expanded=False):
     st.download_button("Download circuit worksheet CSV", circuit_rows.to_csv(index=False).encode("utf-8"),
                        "critical_load_circuits.csv", "text/csv")
 
-st.header("Household Load Designer", anchor="loads")
-st.caption("Edit appliance running watts, schedules and duty cycles to model hourly average demand.")
+st.header("Household energy use", anchor="loads")
+st.caption("Adjust the appliances your home uses. The simulator updates the results automatically.")
+st.caption("Tip: Running watts is the power used while an appliance is on; duty cycle is the fraction of time it runs.")
 if "appliances" not in st.session_state:
     st.session_state.appliances = [
         dict(name=a.name, running_watts=float(a.running_watts), quantity=a.quantity,
@@ -538,7 +539,9 @@ if errors:
     st.stop()
 loads = hourly_load_kw(appliances)
 st.metric("Estimated daily consumption", f"{daily_energy_kwh(appliances):.1f} kWh")
-st.line_chart(pd.DataFrame({"Household load (kW)": loads}))
+with st.expander("View hourly household demand chart", expanded=False):
+    st.caption("Estimated household demand at each hour of the modeled day.")
+    st.line_chart(pd.DataFrame({"Household load (kW)": loads}))
 _, demo_sun = demo_profiles()
 sun = solar_factors(SolarConfig(latitude_deg=latitude, longitude_deg=longitude,
                                array_kw=solar, tilt_deg=tilt, azimuth_deg=azimuth,
