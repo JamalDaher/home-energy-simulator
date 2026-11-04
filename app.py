@@ -382,10 +382,24 @@ with st.sidebar:
             )
             usable_ac_kwh = nominal_bank_kwh * (1 - reserve_pct / 100) * (ac_efficiency_pct / 100)
             st.metric("Estimated usable AC energy", f"{usable_ac_kwh:.2f} kWh")
+            backup_load_kw = st.number_input(
+                "Constant backup load (kW)", min_value=0.1, max_value=20.0,
+                value=1.0, step=0.1,
+                help="Enter a sustained load, not an appliance's momentary startup surge."
+            )
+            estimated_runtime_hours = usable_ac_kwh / backup_load_kw
+            st.metric("Estimated battery-only runtime", f"{estimated_runtime_hours:.1f} hours")
+            if backup_load_kw > inverter:
+                st.warning(
+                    "The selected backup load exceeds the modeled inverter's continuous power limit. "
+                    "The runtime estimate is not achievable with that inverter setting."
+                )
             st.caption(
-                "Illustrative estimate = nominal kWh × (1 − reserve fraction) × AC efficiency. "
-                "Actual usable energy depends on equipment limits, temperature, battery health and loads. "
-                "These assumptions do not change the simulation."
+                "Illustrative estimates: usable AC kWh = nominal kWh × (1 − reserve fraction) "
+                "× AC efficiency; hours = usable AC kWh ÷ constant load kW. "
+                "Assumes a full battery at the start and no solar, grid, or generator contribution. "
+                "Actual runtime depends on load changes, equipment limits, temperature and battery health. "
+                "These inputs do not change the main simulation."
             )
 
 # Keep all simulation tools available; only reduce the number of shortcuts.
