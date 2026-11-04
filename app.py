@@ -157,9 +157,9 @@ st.html("""
 
 with st.expander("New here? Follow this 3-step setup", expanded=False):
     st.markdown(
-        "1. **[Set your household loads](#loads):** Adjust appliances and daily use.\\n"
+        "1. **[Set your household loads](#loads):** Adjust appliances and daily use.\n\n"
         "2. **Choose your power sources:** In the left sidebar, enable the grid or generator "
-        "and configure solar panels or battery storage as needed.\\n"
+        "and configure solar panels or battery storage as needed.\n\n"
         "3. **Review your results:** Check the daily energy overview below, then "
         "**[run an outage simulation](#outage)** or **[compare backup systems](#backup-comparison)**."
     )
