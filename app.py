@@ -429,6 +429,11 @@ with st.sidebar:
             )
             daytime_hours = st.slider("Daytime hours per 24-hour cycle", 1, 23, 12)
             nighttime_hours = 24 - daytime_hours
+            outage_start_period = st.radio(
+                "Outage begins during", ["Daytime", "Nighttime"],
+                horizontal=True, key="backup_outage_start_period",
+                help="The repeating estimate begins at the start of the selected period."
+            )
             if max(daytime_load_kw, nighttime_load_kw) > inverter:
                 st.warning(
                     "At least one day/night load exceeds the selected inverter's continuous rating. "
@@ -440,16 +445,26 @@ with st.sidebar:
                 )
                 full_cycles = int(available_ac_kwh // daily_energy_kwh)
                 remaining_kwh = max(0.0, available_ac_kwh - full_cycles * daily_energy_kwh)
-                # Each cycle starts with daytime hours, then nighttime hours.
-                partial_hours = min(daytime_hours, remaining_kwh / daytime_load_kw)
-                remaining_kwh -= partial_hours * daytime_load_kw
-                if partial_hours >= daytime_hours:
-                    partial_hours += min(nighttime_hours, max(0.0, remaining_kwh) / nighttime_load_kw)
+                # Use the selected outage start period; both orders have the same
+                # 24-hour energy demand, but can yield different partial runtimes.
+                periods = (
+                    [(daytime_hours, daytime_load_kw), (nighttime_hours, nighttime_load_kw)]
+                    if outage_start_period == "Daytime"
+                    else [(nighttime_hours, nighttime_load_kw), (daytime_hours, daytime_load_kw)]
+                )
+                partial_hours = 0.0
+                for period_hours, period_kw in periods:
+                    hours_supported = min(period_hours, remaining_kwh / period_kw)
+                    partial_hours += hours_supported
+                    remaining_kwh = max(0.0, remaining_kwh - hours_supported * period_kw)
+                    if hours_supported < period_hours:
+                        break
                 patterned_runtime_hours = full_cycles * 24 + partial_hours
                 st.metric("Estimated repeating day/night runtime", f"{patterned_runtime_hours:.1f} hours")
                 st.caption(
-                    f"Each cycle starts with {daytime_hours} daytime hours at {daytime_load_kw:.1f} kW, "
-                    f"then {nighttime_hours} nighttime hours at {nighttime_load_kw:.1f} kW. "
+                    f"Outage begins at the start of {outage_start_period.lower()}. "
+                    f"Each repeating cycle has {daytime_hours} daytime hours at {daytime_load_kw:.1f} kW "
+                    f"and {nighttime_hours} nighttime hours at {nighttime_load_kw:.1f} kW. "
                     "The estimate excludes solar, grid, generator power, and changing loads within each period."
                 )
             st.caption(
