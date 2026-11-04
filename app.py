@@ -123,6 +123,8 @@ st.caption("Solar · Battery · Generator · Outage resilience · Cost compariso
 st.html("""
 <style>
 .sim-nav {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 18px}
+.sim-nav-group{grid-column:1/-1;font-size:.78rem;font-weight:750;letter-spacing:.035em;opacity:.75;padding:7px 2px 0;margin-top:3px}
+.sim-nav-group:first-child{margin-top:0}
 .sim-nav a {display:block;text-decoration:none!important;border:1px solid rgba(116,144,172,.3);
   background:rgba(116,144,172,.08);border-radius:10px;padding:11px 10px;color:inherit!important;
   font-size:.92rem;font-weight:600;line-height:1.3;transition:background .15s,border-color .15s}
@@ -135,15 +137,19 @@ st.html("""
 @media(max-width:440px){.sim-nav{grid-template-columns:1fr 1fr;gap:7px}.sim-nav a{padding:10px;font-size:.82rem}}
 </style>
 <nav aria-label="Simulator sections" class="sim-nav">
-<a href="#critical-loads">🛡️ Critical circuits<small>Backup load priorities</small></a>
+<div class="sim-nav-group">1 · Plan your loads</div>
 <a href="#loads">⚡ Household loads<small>Appliances & daily demand</small></a>
+<a href="#critical-loads">🛡️ Critical circuits<small>Backup load priorities</small></a>
+<div class="sim-nav-group">2 · Configure equipment</div>
 <a href="#battery-bank">🔋 Battery bank<small>Storage & runtime</small></a>
-<a href="#outage">🏠 Outage simulator<small>Whole-home resilience</small></a>
 <a href="#hvac">❄️ HVAC sizing<small>Startup & generator loads</small></a>
 <a href="#generator-fuel">⛽ Generator fuel<small>Consumption & cost</small></a>
+<div class="sim-nav-group">3 · Simulate & compare</div>
+<a href="#outage">🏠 Outage simulator<small>Whole-home resilience</small></a>
 <a href="#fuel-aware-outage">🕒 Fuel-aware outage<small>Multi-day backup</small></a>
 <a href="#backup-comparison">⚖️ Compare systems<small>Generator, battery & hybrid</small></a>
 <a href="#optimization">📈 Optimization<small>Compare configurations</small></a>
+<div class="sim-nav-group">4 · Save & export</div>
 <a href="#workspace">📁 Workspace<small>Scenarios & reports</small></a>
 </nav>
 """)
