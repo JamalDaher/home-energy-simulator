@@ -405,7 +405,7 @@ with st.expander("View system connection diagram", expanded=False):
     </div>
     """)
 st.html('<span id="critical-loads" class="sim-section-anchor"></span>')
-with st.expander("Critical-Load Circuit Planner (v1.2)", expanded=False):
+with st.expander("Essential circuits", expanded=False):
     st.caption("Estimate which circuits can operate together during a grid outage. "
                "This planning worksheet does not change the 24-hour simulation.")
     if "critical_circuits" not in st.session_state:
@@ -605,7 +605,7 @@ st.info("Load is synthetic. Solar model is approximate clear-sky geometry, not m
 
 
 st.html('<span id="battery-bank" class="sim-section-anchor"></span>')
-with st.expander("LiFePO4 Battery Bank Designer", expanded=False):
+with st.expander("Battery bank designer", expanded=False):
     st.caption('Nominal educational estimates only; verify manufacturer series/parallel approval and electrical protections.')
     from home_energy_simulator.battery import BatteryBank
     bc1,bc2,bc3 = st.columns(3)
@@ -634,7 +634,7 @@ with st.expander("LiFePO4 Battery Bank Designer", expanded=False):
 
 
 st.html('<span id="outage" class="sim-section-anchor"></span>')
-with st.expander("Whole-Home Outage Simulator", expanded=False):
+with st.expander("Outage simulation", expanded=False):
     st.caption("Repeat a synthetic 24-hour household load and the selected solar profile over multiple outage days. The grid is always off.")
     from home_energy_simulator.outage import simulate_outage
     oc1, oc2, oc3 = st.columns(3)
@@ -689,7 +689,7 @@ with st.expander("Whole-Home Outage Simulator", expanded=False):
 
 
 st.html('<span id="hvac" class="sim-section-anchor"></span>')
-with st.expander("HVAC & Generator Sizing (v0.6)", expanded=False):
+with st.expander("Heating, cooling & generator sizing", expanded=False):
     st.caption("Nominal running and startup capacity screening. Enter equipment-specific ratings before drawing conclusions.")
     from home_energy_simulator.hvac import HVACLoad, SourceRating, evaluate_hvac
     hc1, hc2, hc3 = st.columns(3)
@@ -725,7 +725,7 @@ with st.expander("HVAC & Generator Sizing (v0.6)", expanded=False):
 
 
 st.html('<span id="generator-fuel" class="sim-section-anchor"></span>')
-with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
+with st.expander("Generator fuel & runtime", expanded=False):
     st.caption("Two fuel input sources are available: a load-dependent detailed fuel curve below, or the generator profile in the sidebar. Choose which one drives the integrated outage simulation.")
     from home_energy_simulator.fuel import FuelModel
     with st.expander("Detailed fuel curve inputs", expanded=False):
@@ -822,7 +822,7 @@ with st.expander("Generator Fuel & Runtime Calculator (v0.7)", expanded=False):
 
 
 st.html('<span id="fuel-aware-outage" class="sim-section-anchor"></span>')
-with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
+with st.expander("Multi-day outage with fuel limits", expanded=False):
     st.caption("Uses the household load, solar, battery and generator settings, with the fuel source selected in the generator fuel calculator.")
     outage_fuel_model = fuel_model
     outage_fuel_inventory = inventory * fuel_to_internal if use_finite_fuel else None
@@ -945,7 +945,7 @@ with st.expander("Integrated Fuel-Aware Outage (v0.8)", expanded=False):
 
 
 st.html('<span id="backup-comparison" class="sim-section-anchor"></span>')
-with st.expander("Backup System Comparison (v1.2)", expanded=False):
+with st.expander("Compare backup systems", expanded=False):
     st.caption("Compare three configurations against the same household loads and outage duration. "
                "Grid power is disabled for every scenario. This is a modeled comparison, not equipment sizing approval.")
     st.caption("Generator-only: generator, no solar or battery. Battery-only: battery, no solar or generator. "
@@ -1099,7 +1099,7 @@ with st.expander("Backup System Comparison (v1.2)", expanded=False):
                    "hourly dispatch does not model starting surges or transfer equipment.")
 
 st.html('<span id="optimization" class="sim-section-anchor"></span>')
-with st.expander("System Optimization (v0.9)", expanded=False):
+with st.expander("Find a better system configuration", expanded=False):
     st.caption("Compare discrete solar, battery and generator sizes for one repeated-day outage scenario.")
     from home_energy_simulator.optimization import UnitCosts, optimize_system
     opt1, opt2, opt3 = st.columns(3)
@@ -1161,7 +1161,7 @@ with st.expander("System Optimization (v0.9)", expanded=False):
 
 
 st.html('<span id="workspace" class="sim-section-anchor"></span>')
-with st.expander("Scenario Workspace & PDF Reports (v1.0)", expanded=False):
+with st.expander("Saved scenarios & reports", expanded=False):
     st.caption("Save a snapshot as JSON, reload it for independent analysis, and export a PDF report. Files remain on your device; nothing is saved to a server.")
     from home_energy_simulator.scenarios import Scenario, scenario_to_json, scenario_from_json
     from home_energy_simulator.reports import outage_pdf
