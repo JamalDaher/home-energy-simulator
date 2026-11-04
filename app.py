@@ -417,6 +417,41 @@ with st.sidebar:
             ]
             st.dataframe(pd.DataFrame(comparison_rows), hide_index=True, use_container_width=True)
             st.caption("A blank runtime means the load exceeds the selected inverter rating; startup surges are not modeled.")
+            st.markdown("**Day and night backup-load estimate**")
+            st.caption("Estimate battery-only endurance with a repeating 24-hour load pattern.")
+            daytime_load_kw = st.number_input(
+                "Daytime constant load (kW)", min_value=0.1, max_value=20.0,
+                value=1.5, step=0.1, key="backup_day_load_kw"
+            )
+            nighttime_load_kw = st.number_input(
+                "Nighttime constant load (kW)", min_value=0.1, max_value=20.0,
+                value=0.5, step=0.1, key="backup_night_load_kw"
+            )
+            daytime_hours = st.slider("Daytime hours per 24-hour cycle", 1, 23, 12)
+            nighttime_hours = 24 - daytime_hours
+            if max(daytime_load_kw, nighttime_load_kw) > inverter:
+                st.warning(
+                    "At least one day/night load exceeds the selected inverter's continuous rating. "
+                    "A battery-only runtime cannot be estimated for this configuration."
+                )
+            else:
+                daily_energy_kwh = (
+                    daytime_load_kw * daytime_hours + nighttime_load_kw * nighttime_hours
+                )
+                full_cycles = int(available_ac_kwh // daily_energy_kwh)
+                remaining_kwh = max(0.0, available_ac_kwh - full_cycles * daily_energy_kwh)
+                # Each cycle starts with daytime hours, then nighttime hours.
+                partial_hours = min(daytime_hours, remaining_kwh / daytime_load_kw)
+                remaining_kwh -= partial_hours * daytime_load_kw
+                if partial_hours >= daytime_hours:
+                    partial_hours += min(nighttime_hours, max(0.0, remaining_kwh) / nighttime_load_kw)
+                patterned_runtime_hours = full_cycles * 24 + partial_hours
+                st.metric("Estimated repeating day/night runtime", f"{patterned_runtime_hours:.1f} hours")
+                st.caption(
+                    f"Each cycle starts with {daytime_hours} daytime hours at {daytime_load_kw:.1f} kW, "
+                    f"then {nighttime_hours} nighttime hours at {nighttime_load_kw:.1f} kW. "
+                    "The estimate excludes solar, grid, generator power, and changing loads within each period."
+                )
             st.caption(
                 "Illustrative estimates: usable AC kWh = nominal kWh × (1 − reserve fraction) "
                 "× AC efficiency at full charge; runtime hours = nominal kWh × "
