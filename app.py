@@ -460,6 +460,28 @@ with st.sidebar:
                         f"{daily_energy_kwh - available_ac_kwh:.2f} kWh more than the "
                         "estimated available battery energy."
                     )
+                st.markdown("**Plan for a longer outage**")
+                planning_days = st.select_slider(
+                    "Outage planning horizon", options=[1, 2, 3, 5, 7], value=3,
+                    format_func=lambda days: f"{days} day" if days == 1 else f"{days} days",
+                    help="Compare repeating daily demand with the starting battery energy, without recharging."
+                )
+                required_kwh = daily_energy_kwh * planning_days
+                energy_gap_kwh = max(0.0, required_kwh - available_ac_kwh)
+                covered_pct = min(100.0, 100.0 * available_ac_kwh / required_kwh)
+                st.metric(
+                    f"Energy needed for {planning_days} day(s)",
+                    f"{required_kwh:.1f} kWh",
+                    delta=f"{energy_gap_kwh:.1f} kWh additional energy needed"
+                    if energy_gap_kwh > 0 else "Covered by starting battery energy",
+                    delta_color="off"
+                )
+                st.progress(covered_pct / 100.0, text=f"Starting battery energy covers {covered_pct:.0f}% of the selected horizon")
+                if energy_gap_kwh > 0:
+                    st.caption(
+                        "The energy gap is a planning estimate, not a generator fuel or solar sizing recommendation. "
+                        "Charging, equipment power limits, and changing conditions require a full dispatch model."
+                    )
                 full_cycles = int(available_ac_kwh // daily_energy_kwh)
                 remaining_kwh = max(0.0, available_ac_kwh - full_cycles * daily_energy_kwh)
                 # Use the selected outage start period; both orders have the same
