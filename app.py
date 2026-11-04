@@ -597,6 +597,14 @@ else:
         f"About {summary['unmet_kwh']:.1f} kWh is not supplied over 24 hours. "
         "Try reducing loads or increasing available generation or storage."
     )
+    with st.expander("How can I reduce the energy shortfall?", expanded=False):
+        st.markdown(
+            "- **Reduce demand:** Open [Household energy use](#loads) and lower optional appliance usage.\n"
+            "- **Review supply:** Check the grid and generator switches and their running ratings in the sidebar.\n"
+            "- **Adjust solar or battery:** Increase modeled capacity only if it matches equipment you actually have or plan to install.\n"
+            "- **Test an outage:** Open [Outage simulation](#outage) to examine backup performance."
+        )
+        st.caption("These are planning ideas, not guarantees of runtime or equipment compatibility.")
 st.progress(min(1.0, max(0.0, served_pct / 100)), text=f"Household energy supplied: {served_pct:.1f}%")
 st.caption("These results describe one modeled day, not a guarantee of outage runtime or equipment compatibility.")
 with st.expander("Explore charts, hourly data & CSV export", expanded=False):
