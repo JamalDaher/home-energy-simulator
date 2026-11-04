@@ -127,6 +127,7 @@ st.html("""
   background:rgba(116,144,172,.08);border-radius:10px;padding:11px 10px;color:inherit!important;
   font-size:.92rem;font-weight:600;line-height:1.3;transition:background .15s,border-color .15s}
 .sim-nav a:hover,.sim-nav a:focus-visible {background:rgba(116,144,172,.19);border-color:rgba(116,144,172,.65)}
+.sim-nav a[aria-current="location"] {background:rgba(116,144,172,.24);border-color:rgba(116,144,172,.85);box-shadow:inset 0 0 0 1px rgba(116,144,172,.45)}
 .sim-nav a small {display:block;font-size:.72rem;opacity:.65;margin-top:4px;font-weight:400}
 @media(max-width:1050px){.sim-nav{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){.sim-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -158,8 +159,15 @@ nav_expansion_script = """
     'generator-fuel', 'fuel-aware-outage', 'backup-comparison',
     'optimization', 'workspace'
   ]);
+  function markActive(id) {
+    document.querySelectorAll('.sim-nav a[href^="#"]').forEach(link => {
+      if (link.hash.slice(1) === id) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+  }
   function openSection(id) {
     if (!ids.has(id)) return;
+    markActive(id);
     const anchor = document.getElementById(id);
     if (!anchor) return;
     const blocks = [...document.querySelectorAll('[data-testid="stExpander"]')];
@@ -178,7 +186,11 @@ nav_expansion_script = """
     const link = event.target.closest?.('.sim-nav a[href^="#"]');
     if (!link) return;
     const id = decodeURIComponent(link.hash.slice(1));
-    if (!ids.has(id)) return;
+    if (!ids.has(id)) {
+      // Household loads is a native Streamlit heading, not an expander.
+      markActive(id);
+      return;
+    }
     event.preventDefault();
     if (location.hash !== '#' + id) history.pushState(null, '', '#' + id);
     openSection(id);
@@ -186,6 +198,7 @@ nav_expansion_script = """
   function followHash() {
     const id = decodeURIComponent(location.hash.slice(1));
     if (ids.has(id)) requestAnimationFrame(() => openSection(id));
+    else if (id === 'loads') markActive(id);
   }
   window.addEventListener('hashchange', followHash);
   window.addEventListener('popstate', followHash);

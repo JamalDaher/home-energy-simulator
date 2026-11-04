@@ -36,7 +36,7 @@ def test_expandable_navigation_targets_precede_section_expanders():
 
 def test_navigation_expansion_targets_match_sections():
     script = APP.split("nav_expansion_script = ", 1)[1].split('"""', 2)[1]
-    targets = set(re.findall(r"'([a-z]+(?:-[a-z]+)*)'", script.split("function openSection", 1)[0]))
+    targets = set(re.findall(r"'([a-z]+(?:-[a-z]+)*)'", script.split("]);", 1)[0]))
     assert targets == {
         "critical-loads", "battery-bank", "outage", "hvac",
         "generator-fuel", "fuel-aware-outage", "backup-comparison",
