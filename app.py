@@ -324,7 +324,15 @@ with st.sidebar:
 # Keep all simulation tools available; only reduce the number of shortcuts.
 # This CSS is injected after sidebar widgets so changing the toggle reruns it.
 if not advanced_view:
-    st.html("<style>.sim-nav a.sim-nav-advanced{display:none!important}</style>")
+    st.html("""<style>
+    /* Simple mode should feel like four quick actions, not a ten-tool catalog. */
+    .sim-nav .sim-nav-group, .sim-nav a.sim-nav-advanced {display:none!important}
+    .sim-nav {grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .sim-nav a {padding:14px 12px}
+    @media(max-width:650px) {
+      .sim-nav {grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    </style>""")
 
 if generator_only:
     grid = False
