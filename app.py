@@ -244,6 +244,16 @@ with st.sidebar:
                                  help="Run on generator power without grid, solar, or battery contribution.")
     grid = st.checkbox("Grid available", value=False, disabled=generator_only)
     gen_enabled = st.checkbox("Generator enabled", value=False, disabled=generator_only)
+    if generator_only:
+        st.info("Generator-only: the grid, solar panels, and battery will not supply power.")
+    elif grid and gen_enabled:
+        st.caption("Active sources: grid and generator. Solar and battery settings are below.")
+    elif grid:
+        st.caption("Grid power is available. The generator is off; solar and battery settings are below.")
+    elif gen_enabled:
+        st.caption("Grid power is unavailable. The generator is enabled; solar and battery settings are below.")
+    else:
+        st.caption("Grid and generator are off. Solar and battery may still supply energy if configured.")
     st.divider()
     st.subheader("2 · Generator")
     with st.expander("Generator model, power & fuel", expanded=generator_only or gen_enabled):
