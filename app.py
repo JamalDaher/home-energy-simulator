@@ -615,9 +615,15 @@ else:
     shortfall_hours = df.index[df["unmet_kwh"] > 1e-6].tolist()
     if shortfall_hours:
         hour_labels = ", ".join(f"{int(hour):02d}:00" for hour in shortfall_hours)
+        worst_hour = int(df["unmet_kwh"].idxmax())
+        worst_shortfall = float(df.loc[worst_hour, "unmet_kwh"])
         st.caption(
             f"**When supply falls short:** {len(shortfall_hours)} of 24 modeled hours "
             f"({hour_labels}). Hours use the simulation's 24-hour clock."
+        )
+        st.caption(
+            f"**Largest hourly shortfall:** {worst_shortfall:.2f} kWh "
+            f"at {worst_hour:02d}:00. Consider reviewing appliance use around this hour."
         )
     with st.expander("How can I reduce the energy shortfall?", expanded=False):
         st.markdown(
