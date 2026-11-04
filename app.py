@@ -589,6 +589,22 @@ else:
         active_sources.append(f"Battery ({battery:.1f} kWh, {inverter:.1f} kW inverter)")
     active_system = " · ".join(active_sources) if active_sources else "No power sources configured"
 st.caption(f"**Modeled system:** {active_system}")
+# Flag configuration mismatches before users interpret the daily results.
+if (generator_only or gen_enabled) and gen_kw <= 0:
+    st.warning(
+        "Generator is enabled but its running power is 0 kW. "
+        "Enter a verified continuous running rating under Generator settings."
+    )
+if not generator_only and battery > 0 and inverter <= 0:
+    st.warning(
+        "Battery storage is configured, but the inverter limit is 0 kW. "
+        "Increase the modeled inverter limit to allow battery output."
+    )
+if not generator_only and inverter > 0 and battery <= 0:
+    st.info(
+        "The battery inverter has a power rating, but battery capacity is 0 kWh. "
+        "Add storage capacity to model battery backup."
+    )
 st.caption("Modeled energy over 24 hours. kWh measures energy used or produced, not instantaneous power.")
 a, b, c, d = st.columns(4)
 a.metric("Household demand", f"{summary['demand_kwh']:.1f} kWh",
