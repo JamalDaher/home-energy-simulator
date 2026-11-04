@@ -139,16 +139,16 @@ st.html("""
 <nav aria-label="Simulator sections" class="sim-nav">
 <div class="sim-nav-group">1 · Plan your loads</div>
 <a href="#loads">⚡ Household loads<small>Appliances & daily demand</small></a>
-<a href="#critical-loads">🛡️ Critical circuits<small>Backup load priorities</small></a>
+<a class="sim-nav-advanced" href="#critical-loads">🛡️ Critical circuits<small>Backup load priorities</small></a>
 <div class="sim-nav-group">2 · Configure equipment</div>
-<a href="#battery-bank">🔋 Battery bank<small>Storage & runtime</small></a>
-<a href="#hvac">❄️ HVAC sizing<small>Startup & generator loads</small></a>
-<a href="#generator-fuel">⛽ Generator fuel<small>Consumption & cost</small></a>
+<a class="sim-nav-advanced" href="#battery-bank">🔋 Battery bank<small>Storage & runtime</small></a>
+<a class="sim-nav-advanced" href="#hvac">❄️ HVAC sizing<small>Startup & generator loads</small></a>
+<a class="sim-nav-advanced" href="#generator-fuel">⛽ Generator fuel<small>Consumption & cost</small></a>
 <div class="sim-nav-group">3 · Simulate & compare</div>
 <a href="#outage">🏠 Outage simulator<small>Whole-home resilience</small></a>
-<a href="#fuel-aware-outage">🕒 Fuel-aware outage<small>Multi-day backup</small></a>
+<a class="sim-nav-advanced" href="#fuel-aware-outage">🕒 Fuel-aware outage<small>Multi-day backup</small></a>
 <a href="#backup-comparison">⚖️ Compare systems<small>Generator, battery & hybrid</small></a>
-<a href="#optimization">📈 Optimization<small>Compare configurations</small></a>
+<a class="sim-nav-advanced" href="#optimization">📈 Optimization<small>Compare configurations</small></a>
 <div class="sim-nav-group">4 · Save & export</div>
 <a href="#workspace">📁 Workspace<small>Scenarios & reports</small></a>
 </nav>
@@ -220,6 +220,12 @@ if "unsafe_allow_javascript" in inspect.signature(st.html).parameters:
 
 with st.sidebar:
     st.header("Configure your system")
+    advanced_view = st.toggle(
+        "Show advanced tools", value=False, key="show_advanced_navigation",
+        help="Show every dashboard shortcut. All simulation tools remain available below."
+    )
+    st.caption("Simple view highlights the most common tasks." if not advanced_view
+               else "Advanced view shows all simulation shortcuts.")
     st.caption("Start with your power mode, then open only the equipment settings you need.")
     st.subheader("1 · Power mode")
     generator_only = st.checkbox("Generator-only mode", value=False,
@@ -314,6 +320,11 @@ with st.sidebar:
         battery = st.slider("Battery capacity (kWh)", 0.0, 60.0, 14.0, 0.5, disabled=generator_only)
         inverter = st.slider("Battery inverter limit (kW)", 0.0, 20.0, 5.0, 0.5, disabled=generator_only)
         initial = st.slider("Initial battery charge (%)", 10, 100, 50, disabled=generator_only)
+
+# Keep all simulation tools available; only reduce the number of shortcuts.
+# This CSS is injected after sidebar widgets so changing the toggle reruns it.
+if not advanced_view:
+    st.html("<style>.sim-nav a.sim-nav-advanced{display:none!important}</style>")
 
 if generator_only:
     grid = False

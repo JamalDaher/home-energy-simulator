@@ -7,7 +7,7 @@ APP = (Path(__file__).resolve().parents[1] / "app.py").read_text(encoding="utf-8
 
 def test_navigation_links_have_unique_target_anchors():
     nav = APP.split('<nav aria-label="Simulator sections" class="sim-nav">', 1)[1].split("</nav>", 1)[0]
-    targets = re.findall(r'<a href="#([a-z-]+)"', nav)
+    targets = re.findall(r'<a[^>]* href="#([a-z-]+)"', nav)
     assert len(targets) == 10
     assert len(targets) == len(set(targets))
     for target in targets:
