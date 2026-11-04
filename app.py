@@ -765,7 +765,8 @@ st.html('<span id="generator-fuel" class="sim-section-anchor"></span>')
 with st.expander("Generator fuel & runtime", expanded=False):
     st.caption("Two fuel input sources are available: a load-dependent detailed fuel curve below, or the generator profile in the sidebar. Choose which one drives the integrated outage simulation.")
     from home_energy_simulator.fuel import FuelModel
-    with st.expander("Detailed fuel curve inputs", expanded=False):
+    with st.container(border=True):
+        st.markdown("**Detailed fuel curve inputs**")
         fc1, fc2, fc3 = st.columns(3)
         with fc1:
             fuel_kind = st.selectbox("Generator fuel type", ["gasoline", "propane", "natural_gas"],
@@ -1120,7 +1121,8 @@ with st.expander("Compare backup systems", expanded=False):
                 "10-year ownership ($)", "20-year ownership ($)"
             ]], hide_index=True, use_container_width=True)
             st.bar_chart(summary_df.set_index("Configuration")[["10-year ownership ($)"]])
-            with st.expander("Upfront equipment and outage fuel costs", expanded=False):
+            with st.container(border=True):
+                st.markdown("**Upfront equipment and outage fuel costs**")
                 st.dataframe(summary_df[[
                     "Configuration", "Equipment + installation ($)",
                     "Fuel cost ($)", "Modeled outage cost ($)"
