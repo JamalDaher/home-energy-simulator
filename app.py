@@ -302,8 +302,9 @@ with st.sidebar:
     st.divider()
     st.subheader("3 · Solar panels")
     with st.expander("Solar array and location", expanded=False):
-        st.caption("Set your solar capacity and optional seasonal conditions.")
-        solar = st.slider("Solar array (kW)", 0.0, 20.0, 4.8, 0.2, disabled=generator_only)
+        st.caption("Solar array size is the total rated output of your panels. Actual production depends on sunlight and conditions.")
+        solar = st.slider("Solar array (kW)", 0.0, 20.0, 4.8, 0.2, disabled=generator_only,
+                          help="Add up the panel nameplate watts and divide by 1,000. Example: 20 × 240 W = 4.8 kW.")
         use_solar = st.checkbox("Use location and seasonal solar model", value=True, disabled=generator_only)
         solar_defaults = {
             "latitude": 34.27, "longitude": -88.41, "day": date.today(),
@@ -329,10 +330,13 @@ with st.sidebar:
     st.divider()
     st.subheader("4 · Battery storage")
     with st.expander("Battery and inverter settings", expanded=False):
-        st.caption("Set storage capacity, inverter power and starting charge.")
-        battery = st.slider("Battery capacity (kWh)", 0.0, 60.0, 14.0, 0.5, disabled=generator_only)
-        inverter = st.slider("Battery inverter limit (kW)", 0.0, 20.0, 5.0, 0.5, disabled=generator_only)
-        initial = st.slider("Initial battery charge (%)", 10, 100, 50, disabled=generator_only)
+        st.caption("Capacity measures stored energy (kWh); inverter power limits how much can be supplied at once (kW).")
+        battery = st.slider("Battery capacity (kWh)", 0.0, 60.0, 14.0, 0.5, disabled=generator_only,
+                            help="Nominal stored energy before losses or reserve limits. For example, 48 V × 280 Ah ≈ 13.4 kWh.")
+        inverter = st.slider("Battery inverter limit (kW)", 0.0, 20.0, 5.0, 0.5, disabled=generator_only,
+                             help="Maximum continuous AC output of the battery inverter, not its surge rating.")
+        initial = st.slider("Initial battery charge (%)", 10, 100, 50, disabled=generator_only,
+                            help="Battery state of charge at the beginning of the modeled day.")
 
 # Keep all simulation tools available; only reduce the number of shortcuts.
 # This CSS is injected after sidebar widgets so changing the toggle reruns it.
