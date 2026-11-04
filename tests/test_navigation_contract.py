@@ -16,15 +16,15 @@ def test_navigation_links_have_unique_target_anchors():
 
 def test_expandable_navigation_targets_precede_section_expanders():
     sections = {
-        "critical-loads": "Critical-Load Circuit Planner",
-        "battery-bank": "LiFePO4 Battery Bank Designer",
-        "outage": "Whole-Home Outage Simulator",
-        "hvac": "HVAC & Generator Sizing",
-        "generator-fuel": "Generator Fuel & Runtime Calculator",
-        "fuel-aware-outage": "Integrated Fuel-Aware Outage",
-        "backup-comparison": "Backup System Comparison",
-        "optimization": "System Optimization",
-        "workspace": "Scenario Workspace & PDF Reports",
+        "critical-loads": "Essential circuits",
+        "battery-bank": "Battery bank designer",
+        "outage": "Outage simulation",
+        "hvac": "Heating, cooling & generator sizing",
+        "generator-fuel": "Generator fuel & runtime",
+        "fuel-aware-outage": "Multi-day outage with fuel limits",
+        "backup-comparison": "Compare backup systems",
+        "optimization": "Find a better system configuration",
+        "workspace": "Saved scenarios & reports",
     }
     for anchor, title in sections.items():
         anchor_pos = APP.index('id="' + anchor + '"')
