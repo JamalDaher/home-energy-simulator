@@ -625,6 +625,20 @@ else:
             f"**Largest hourly shortfall:** {worst_shortfall:.2f} kWh "
             f"at {worst_hour:02d}:00. Consider reviewing appliance use around this hour."
         )
+        with st.expander("See hourly demand and shortfall", expanded=False):
+            st.caption(
+                "Compare household energy demand against the portion that was not supplied. "
+                "Each bar represents one modeled hour; kWh is energy, not instantaneous power."
+            )
+            hourly_coverage = pd.DataFrame({
+                "Household demand (kWh)": df["demand_kwh"],
+                "Unmet demand (kWh)": df["unmet_kwh"],
+            })
+            st.bar_chart(hourly_coverage)
+            st.caption(
+                "A shortfall may reflect unavailable energy or a power limit. "
+                "Check the equipment settings and household loads before changing a design."
+            )
     with st.expander("How can I reduce the energy shortfall?", expanded=False):
         st.markdown(
             "- **Reduce demand:** Open [Household energy use](#loads) and lower optional appliance usage.\n"
