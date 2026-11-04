@@ -347,6 +347,26 @@ with st.sidebar:
                              help="Maximum continuous AC output of the battery inverter, not its surge rating.")
         initial = st.slider("Initial battery charge (%)", 10, 100, 50, disabled=generator_only,
                             help="Battery state of charge at the beginning of the modeled day.")
+        st.markdown("**Battery capacity calculator (optional)**")
+        st.caption("Convert a battery bank's nominal voltage and amp-hours into kWh before setting the capacity slider.")
+        bank_voltage = st.number_input(
+            "Battery bank voltage (V)", min_value=1.0, max_value=1000.0,
+            value=48.0, step=1.0, disabled=generator_only,
+            help="Use the nominal voltage of the entire battery bank, not a single cell."
+        )
+        bank_ah = st.number_input(
+            "Battery bank capacity (Ah)", min_value=0.0, max_value=10000.0,
+            value=280.0, step=10.0, disabled=generator_only,
+            help="Use the total bank amp-hour capacity at the specified bank voltage."
+        )
+        nominal_bank_kwh = bank_voltage * bank_ah / 1000.0
+        st.caption(
+            f"Calculated nominal capacity: **{nominal_bank_kwh:.2f} kWh** "
+            f"(V × Ah ÷ 1,000). The simulation slider remains **{battery:.1f} kWh**."
+        )
+        if not generator_only and abs(nominal_bank_kwh - battery) > 0.5:
+            st.info("To model this calculated bank, manually adjust Battery capacity (kWh) above.")
+        st.caption("Nominal capacity is not usable AC energy; losses, reserve limits and battery ratings matter.")
 
 # Keep all simulation tools available; only reduce the number of shortcuts.
 # This CSS is injected after sidebar widgets so changing the toggle reruns it.
