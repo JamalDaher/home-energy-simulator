@@ -387,8 +387,17 @@ with st.sidebar:
                 value=1.0, step=0.1,
                 help="Enter a sustained load, not an appliance's momentary startup surge."
             )
-            estimated_runtime_hours = usable_ac_kwh / backup_load_kw
+            # Account for the battery's actual starting charge and the selected reserve.
+            starting_charge_pct = st.slider(
+                "Starting battery charge for runtime estimate (%)", 0, 100, initial, 5,
+                help="Defaults to the simulation's initial battery charge; adjust for an outage starting before the bank is full."
+            )
+            available_fraction = max(0.0, (starting_charge_pct - reserve_pct) / 100.0)
+            available_ac_kwh = nominal_bank_kwh * available_fraction * (ac_efficiency_pct / 100.0)
+            estimated_runtime_hours = available_ac_kwh / backup_load_kw
             st.metric("Estimated battery-only runtime", f"{estimated_runtime_hours:.1f} hours")
+            if starting_charge_pct <= reserve_pct:
+                st.info("Starting charge is at or below the selected reserve, so no usable backup energy is estimated.")
             if backup_load_kw > inverter:
                 st.warning(
                     "The selected backup load exceeds the modeled inverter's continuous power limit. "
@@ -396,8 +405,9 @@ with st.sidebar:
                 )
             st.caption(
                 "Illustrative estimates: usable AC kWh = nominal kWh × (1 − reserve fraction) "
-                "× AC efficiency; hours = usable AC kWh ÷ constant load kW. "
-                "Assumes a full battery at the start and no solar, grid, or generator contribution. "
+                "× AC efficiency at full charge; runtime hours = nominal kWh × "
+                "max(0, starting charge − reserve) × AC efficiency ÷ constant load kW. "
+                "Uses the selected starting charge above reserve, with no solar, grid, or generator contribution. "
                 "Actual runtime depends on load changes, equipment limits, temperature and battery health. "
                 "These inputs do not change the main simulation."
             )
