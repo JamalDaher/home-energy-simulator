@@ -403,6 +403,20 @@ with st.sidebar:
                     "The selected backup load exceeds the modeled inverter's continuous power limit. "
                     "The runtime estimate is not achievable with that inverter setting."
                 )
+            st.markdown("**Compare backup loads**")
+            st.caption("Illustrative constant-load runtimes using the same starting charge, reserve and efficiency.")
+            comparison_loads_kw = [0.5, 1.0, 2.0, 3.0]
+            comparison_rows = [
+                {
+                    "Backup load (kW)": load_kw,
+                    "Estimated runtime (hours)": round(available_ac_kwh / load_kw, 1)
+                    if inverter >= load_kw else None,
+                    "Within inverter rating": "Yes" if inverter >= load_kw else "No",
+                }
+                for load_kw in comparison_loads_kw
+            ]
+            st.dataframe(pd.DataFrame(comparison_rows), hide_index=True, use_container_width=True)
+            st.caption("A blank runtime means the load exceeds the selected inverter rating; startup surges are not modeled.")
             st.caption(
                 "Illustrative estimates: usable AC kWh = nominal kWh × (1 − reserve fraction) "
                 "× AC efficiency at full charge; runtime hours = nominal kWh × "
